@@ -52,6 +52,7 @@ class PyObjectId(str):
 class UserRole(str, Enum):
     STUDENT = "student"
     TEACHER = "teacher"
+    ADMIN = "admin"
 
 # User Models
 class UserBase(BaseModel):
@@ -79,6 +80,8 @@ class UserInDB(UserBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     hashed_password: str
     is_verified: bool = False
+    is_banned: bool = False
+    ban_reason: Optional[str] = None
     friends: List[PyObjectId] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -98,6 +101,8 @@ class UserInDB(UserBase):
 class User(UserBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     is_verified: bool = False
+    is_banned: bool = False
+    ban_reason: Optional[str] = None
     friends: List[PyObjectId] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

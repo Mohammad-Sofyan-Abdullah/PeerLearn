@@ -657,6 +657,11 @@ async def get_chat_history(
     # Convert ObjectIds to strings
     for chat in chat_history:
         chat["id"] = str(chat["_id"])
+        chat["_id"] = str(chat["_id"])
+        if "document_id" in chat and isinstance(chat["document_id"], ObjectId):
+            chat["document_id"] = str(chat["document_id"])
+        if "user_id" in chat and isinstance(chat["user_id"], ObjectId):
+            chat["user_id"] = str(chat["user_id"])
     
     return {"chat_history": chat_history}
 

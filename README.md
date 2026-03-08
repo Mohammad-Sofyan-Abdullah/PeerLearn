@@ -43,6 +43,7 @@ PeerLearn is a modern, collaborative study platform designed to help students co
 - Python 3.8+
 - Node.js 16+
 - MongoDB 4.4+
+- FFmpeg (required for audio processing)
 - Git
 
 ## 🚀 Quick Start
@@ -68,7 +69,23 @@ venv\Scripts\activate
 # macOS/Linux
 source venv/bin/activate
 
-# Install dependencies
+# Install FFmpeg (required for YouTube audio processing)
+# Windows (using Chocolatey):
+choco install ffmpeg
+# Windows (using Scoop):
+scoop install ffmpeg
+# Windows (Manual Download):
+# 1. Download from https://ffmpeg.org/download.html
+# 2. Extract to a folder (e.g., C:\ffmpeg)
+# 3. Add to PATH: Set-Item -Path Env:Path -Value "$Env:Path;C:\ffmpeg\bin"
+# macOS (using Homebrew):
+brew install ffmpeg
+# Ubuntu/Debian:
+sudo apt-get install ffmpeg
+# CentOS/RHEL:
+sudo yum install ffmpeg
+
+# Install Python dependencies
 pip install -r requirements.txt
 
 # Create environment file

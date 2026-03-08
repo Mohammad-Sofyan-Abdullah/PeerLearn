@@ -22,6 +22,8 @@ transformers
 torch
 torchaudio
 librosa
+soundfile
+pydub
 PyPDF2
 google-generativeai
 python-pptx

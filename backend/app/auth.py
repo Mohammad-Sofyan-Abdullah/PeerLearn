@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import settings
-from app.models import TokenData, UserInDB
+from app.models import TokenData, UserInDB, UserRole
 from app.database import get_database
 import secrets
 import string
@@ -97,6 +97,20 @@ async def get_current_active_user(current_user: UserInDB = Depends(get_current_u
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user - please verify your email"
+        )
+    if getattr(current_user, 'is_banned', False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been suspended. Contact support."
+        )
+    return current_user
+
+async def require_admin(current_user: UserInDB = Depends(get_current_user)) -> UserInDB:
+    """Dependency that ensures the current user is an admin"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
         )
     return current_user
 

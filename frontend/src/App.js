@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
 import TeacherLayout from './components/TeacherLayout';
 
@@ -33,6 +34,8 @@ import MyHireRequestsPage from './pages/MyHireRequestsPage';
 import TeacherSessionsPage from './pages/TeacherSessionsPage';
 import TeacherReviewsPage from './pages/TeacherReviewsPage';
 import StudentSessionsPage from './pages/StudentSessionsPage';
+import AdminLoginPage from './pages/AdminLoginPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -55,6 +58,15 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+
+                {/* Admin routes — separate auth, separate token */}
+                <Route path="/admin/login" element={<AdminLoginPage />} />
+                <Route path="/admin/dashboard" element={
+                  <AdminRoute>
+                    <AdminDashboardPage />
+                  </AdminRoute>
+                } />
+                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
                 {/* Protected routes */}
                 <Route path="/teacher/register" element={<TeacherRegisterPage />} />

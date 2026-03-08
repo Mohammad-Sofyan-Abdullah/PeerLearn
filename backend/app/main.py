@@ -114,6 +114,10 @@ app.include_router(notes.router)
 from app.routers import teachers
 app.include_router(teachers.router)
 
+# Import and include Admin router
+from app.routers import admin
+app.include_router(admin.router)
+
 # Mount static files for message uploads
 import os
 if os.path.exists("static"):

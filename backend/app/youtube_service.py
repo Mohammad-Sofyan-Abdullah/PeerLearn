@@ -5,11 +5,16 @@ Handles video transcript extraction and summarization using local Whisper and Gr
 import os
 import re
 import tempfile
+import subprocess
+import shutil
+import platform
+import glob
 from typing import Optional, Tuple, Dict, Any
 import yt_dlp
 from transformers import WhisperProcessor, WhisperForConditionalGeneration
 import torch
 import librosa
+import soundfile as sf
 import numpy as np
 from groq import Groq
 from app.config import settings
@@ -20,11 +25,99 @@ logger = logging.getLogger(__name__)
 class YouTubeService:
     def __init__(self):
         self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
+        self.ffmpeg_path = self._find_ffmpeg()
         
         # Initialize Whisper model for local transcription
         self.whisper_processor = None
         self.whisper_model = None
         self._load_whisper_model()
+    
+    def _find_ffmpeg(self) -> Optional[str]:
+        """Find ffmpeg executable path"""
+        import ctypes
+        import winreg
+        
+        # On Windows, refresh PATH from system registry
+        if platform.system() == 'Windows':
+            try:
+                # Get PATH from system registry
+                reg_path = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+                key = winreg.OpenKey(reg_path, r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')
+                sys_path, _ = winreg.QueryValueEx(key, 'Path')
+                
+                # Get PATH from user registry
+                user_reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+                try:
+                    user_key = winreg.OpenKey(user_reg, r'Environment')
+                    user_path, _ = winreg.QueryValueEx(user_key, 'Path')
+                    sys_path = sys_path + ';' + user_path
+                except:
+                    pass
+                
+                # Update environment
+                os.environ['Path'] = sys_path
+                logger.info("Refreshed PATH from Windows registry")
+            except Exception as e:
+                logger.warning(f"Failed to refresh PATH from registry: {e}")
+        
+        # Try using shutil.which() with refreshed PATH
+        ffmpeg = shutil.which('ffmpeg')
+        if ffmpeg:
+            logger.info(f"Found FFmpeg in PATH: {ffmpeg}")
+            return ffmpeg
+        
+        # On Windows, check common installation paths
+        if platform.system() == 'Windows':
+            # Check Chocolatey installation path first
+            choco_paths = [
+                r'C:\ProgramData\chocolatey\lib\ffmpeg\tools\ffmpeg.exe',
+                r'C:\ProgramData\chocolatey\lib\ffmpeg\tools\bin\ffmpeg.exe',
+            ]
+            
+            # Check WinGet default installation path
+            winget_paths = [
+                os.path.expandvars(r'%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg*\ffmpeg.exe'),
+                os.path.expandvars(r'%LOCALAPPDATA%\Programs\ffmpeg\bin\ffmpeg.exe'),
+                os.path.expandvars(r'%ProgramFiles%\ffmpeg\bin\ffmpeg.exe'),
+            ]
+            
+            # Check all paths
+            all_paths = choco_paths + [
+                r'C:\ffmpeg\bin\ffmpeg.exe',
+                r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
+                r'C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe',
+                os.path.expandvars(r'%APPDATA%\ffmpeg\bin\ffmpeg.exe'),
+            ] + winget_paths
+            
+            for path in all_paths:
+                if os.path.exists(path):
+                    logger.info(f"Found FFmpeg at: {path}")
+                    return path
+            
+            # Try glob expansion for WinGet path
+            for pattern in winget_paths:
+                matches = glob.glob(pattern)
+                for match in matches:
+                    if os.path.exists(match):
+                        logger.info(f"Found FFmpeg at WinGet location: {match}")
+                        return match
+            
+            # Try to get ffmpeg.exe from System32 (might be in PATH)
+            try:
+                result = subprocess.run(['where', 'ffmpeg'], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    ffmpeg_path = result.stdout.strip().split('\n')[0]
+                    if os.path.exists(ffmpeg_path):
+                        logger.info(f"Found FFmpeg via 'where' command: {ffmpeg_path}")
+                        return ffmpeg_path
+            except Exception as e:
+                logger.warning(f"'where' command failed: {e}")
+        
+        logger.warning("FFmpeg not found in PATH or common locations")
+        return None
+    
+    def _load_whisper_model(self):
+        return None
     
     def _load_whisper_model(self):
         """Load Whisper model for local transcription"""
@@ -147,9 +240,12 @@ class YouTubeService:
             temp_dir = tempfile.mkdtemp()
             logger.info(f"Created temp directory: {temp_dir}")
             
-            # Try multiple format options
+            # Try multiple format options - prioritize formats that work without FFmpeg
+            # MP3 and WAV work with just soundfile, m4a requires FFmpeg
             format_options = [
-                'bestaudio[ext=m4a]/bestaudio/best',
+                'bestaudio[ext=mp3]/bestaudio/best',  # MP3 - no FFmpeg needed
+                'bestaudio[ext=wav]/bestaudio/best',  # WAV - no FFmpeg needed
+                'bestaudio[ext=m4a]/bestaudio/best',  # m4a - requires FFmpeg
                 'bestaudio[ext=webm]/bestaudio/best',
                 'bestaudio/best',
                 'worst'  # Fallback to worst quality if needed
@@ -212,8 +308,45 @@ class YouTubeService:
             logger.error(f"Error downloading audio: {e}")
             return None
     
+    def _convert_audio_format(self, input_path: str, output_format: str = "wav") -> Optional[str]:
+        """Convert audio file to a readable format using FFmpeg if available, else fallback to pydub"""
+        output_path = input_path.rsplit('.', 1)[0] + f'.{output_format}'
+        
+        # Try FFmpeg first (most efficient)
+        if self.ffmpeg_path:
+            try:
+                logger.info(f"Using FFmpeg at: {self.ffmpeg_path}")
+                result = subprocess.run(
+                    [self.ffmpeg_path, '-i', input_path, '-acodec', 'pcm_s16le', '-ar', '16000', output_path, '-y'],
+                    capture_output=True,
+                    timeout=60
+                )
+                if result.returncode == 0 and os.path.exists(output_path):
+                    logger.info(f"Successfully converted audio to {output_format} using FFmpeg")
+                    return output_path
+                else:
+                    logger.warning(f"FFmpeg returned code {result.returncode}: {result.stderr.decode('utf-8', errors='ignore')}")
+            except (subprocess.TimeoutExpired, Exception) as e:
+                logger.warning(f"FFmpeg conversion failed: {e}")
+        else:
+            logger.info("FFmpeg not found, skipping FFmpeg conversion attempt")
+        
+        # Fallback to pydub if FFmpeg is not available
+        try:
+            from pydub import AudioSegment
+            logger.info(f"Attempting audio conversion using pydub...")
+            audio = AudioSegment.from_file(input_path)
+            audio = audio.set_frame_rate(16000).set_channels(1)  # Convert to mono, 16kHz
+            audio.export(output_path, format=output_format)
+            logger.info(f"Successfully converted audio to {output_format} using pydub")
+            return output_path
+        except Exception as e:
+            logger.warning(f"Pydub conversion failed: {e}")
+            return None
+    
     async def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """Transcribe audio using local Whisper model"""
+        converted_audio_path = None
         try:
             # Check if Whisper model is loaded
             if self.whisper_model is None or self.whisper_processor is None:
@@ -230,8 +363,46 @@ class YouTubeService:
             
             logger.info("Starting local Whisper transcription...")
             
-            # Load audio file
-            audio_array, sample_rate = librosa.load(audio_file_path, sr=16000)
+            # Get file extension and convert if needed
+            file_ext = os.path.splitext(audio_file_path)[1].lower()
+            logger.info(f"Audio file format: {file_ext}")
+            
+            # If m4a or other format that requires FFmpeg, convert to WAV
+            # MP3 and WAV can be read directly by librosa/soundfile
+            if file_ext in ['.m4a', '.webm', '.opus', '.flac']:
+                logger.info(f"Converting {file_ext} to WAV format...")
+                converted_audio_path = self._convert_audio_format(audio_file_path, "wav")
+                if converted_audio_path:
+                    audio_file_path = converted_audio_path
+                    logger.info("Audio format conversion successful")
+                else:
+                    logger.warning("Audio format conversion failed, attempting direct load")
+            elif file_ext in ['.mp3', '.wav', '.m4b']:
+                logger.info(f"Format {file_ext} is compatible, no conversion needed")
+            
+            # Load audio file using soundfile
+            try:
+                audio_array, sample_rate = sf.read(audio_file_path, dtype=np.float32)
+                
+                # If stereo, convert to mono
+                if len(audio_array.shape) > 1:
+                    audio_array = np.mean(audio_array, axis=1)
+                
+                # Resample if needed
+                if sample_rate != 16000:
+                    audio_array = librosa.resample(audio_array, orig_sr=sample_rate, target_sr=16000)
+                    sample_rate = 16000
+                    
+                logger.info(f"Audio loaded successfully: {len(audio_array)} samples at {sample_rate}Hz")
+            except Exception as audio_load_error:
+                logger.warning(f"Soundfile loading failed: {audio_load_error}, trying librosa fallback")
+                # Fallback to librosa if soundfile fails
+                try:
+                    audio_array, sample_rate = librosa.load(audio_file_path, sr=16000, mono=True)
+                    logger.info(f"Audio loaded via librosa: {len(audio_array)} samples at {sample_rate}Hz")
+                except Exception as librosa_error:
+                    logger.error(f"All audio loading methods failed: {librosa_error}")
+                    return self._generate_fallback_transcript(audio_file_path)
             
             # Process audio
             input_features = self.whisper_processor(
@@ -260,14 +431,21 @@ class YouTubeService:
             )[0]
             
             logger.info("Local Whisper transcription completed successfully")
-
             print("Transcription preview:", transcription) 
 
             return transcription.strip()
             
         except Exception as e:
-            logger.error(f"Error in local transcription: {e}")
+            logger.error(f"Error in local transcription: {e}", exc_info=True)
             return self._generate_fallback_transcript(audio_file_path)
+        finally:
+            # Clean up converted audio file if it was created
+            if converted_audio_path and os.path.exists(converted_audio_path):
+                try:
+                    os.remove(converted_audio_path)
+                    logger.info("Cleaned up converted audio file")
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to clean up converted audio: {cleanup_error}")
     
     def _generate_fallback_transcript(self, audio_file_path: str) -> str:
         """Generate a fallback transcript when API fails"""

@@ -586,7 +586,7 @@ async def process_slide_generation(session_id: str, summary: str, count: int, db
                 try:
                     # Run image generation in thread to prevent blocking
                     import asyncio
-                    img_bytes = await ai_service.generate_slide_image(slide["image_prompt"])
+                    img_bytes = await ai_service.generate_slide_image(slide)
                     
                     if img_bytes:
                         slide["image_bytes"] = img_bytes

@@ -51,6 +51,7 @@ const DocumentSessionPage = () => {
     const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState({});
     const [showQuizResults, setShowQuizResults] = useState(false);
+    const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
     const [showShareModal, setShowShareModal] = useState(false);
     const [shareContentType, setShareContentType] = useState(null);
     const [copiedContent, setCopiedContent] = useState(null);
@@ -138,9 +139,9 @@ const DocumentSessionPage = () => {
         }
     );
 
-    // Quiz mutation
+    // Quiz mutation — accepts difficulty as the mutate() argument
     const quizMutation = useMutation(
-        () => notesAPI.generateQuiz(sessionId, 10),
+        (difficulty = 'medium') => notesAPI.generateQuiz(sessionId, 10, difficulty),
         {
             onSuccess: () => {
                 toast.success('Quiz generated successfully');
@@ -724,15 +725,36 @@ const DocumentSessionPage = () => {
                                         </h3>
                                         <p className="text-sm text-gray-600">Test your knowledge of the document</p>
                                     </div>
-                                    <StyledButton
-                                        onClick={() => quizMutation.mutate()}
-                                        disabled={quizMutation.isLoading}
-                                        variant="outline"
-                                        leftIcon={!quizMutation.isLoading && <RefreshCw className="h-4 w-4" />}
-                                        isLoading={quizMutation.isLoading}
-                                    >
-                                        {session?.quiz?.questions?.length ? 'New Quiz' : 'Generate'}
-                                    </StyledButton>
+                                    <div className="flex items-center space-x-3">
+                                        {/* Difficulty badge for existing quiz */}
+                                        {session?.quiz?.difficulty && (
+                                            <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded-full">
+                                                Current: <span className="font-medium capitalize">{session.quiz.difficulty}</span>
+                                            </span>
+                                        )}
+                                        {/* Difficulty selector */}
+                                        <select
+                                            value={selectedDifficulty}
+                                            onChange={(e) => setSelectedDifficulty(e.target.value)}
+                                            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            disabled={quizMutation.isLoading}
+                                        >
+                                            <option value="easiest">⭐ Easiest</option>
+                                            <option value="easy">⭐⭐ Easy</option>
+                                            <option value="medium">⭐⭐⭐ Medium</option>
+                                            <option value="hard">⭐⭐⭐⭐ Hard</option>
+                                            <option value="hardest">⭐⭐⭐⭐⭐ Hardest</option>
+                                        </select>
+                                        <StyledButton
+                                            onClick={() => quizMutation.mutate(selectedDifficulty)}
+                                            disabled={quizMutation.isLoading}
+                                            variant="outline"
+                                            leftIcon={!quizMutation.isLoading && <RefreshCw className="h-4 w-4" />}
+                                            isLoading={quizMutation.isLoading}
+                                        >
+                                            {session?.quiz?.questions?.length ? 'New Quiz' : 'Generate'}
+                                        </StyledButton>
+                                    </div>
                                 </div>
 
                                 {(!session?.quiz?.questions || session.quiz.questions.length === 0) ? (
@@ -746,7 +768,7 @@ const DocumentSessionPage = () => {
                                         </p>
                                         {session.detailed_summary && (
                                             <StyledButton
-                                                onClick={() => quizMutation.mutate()}
+                                                onClick={() => quizMutation.mutate(selectedDifficulty)}
                                                 disabled={quizMutation.isLoading}
                                                 className="mx-auto"
                                                 leftIcon={<Sparkles className="h-4 w-4" />}

@@ -46,7 +46,7 @@ const DashboardPage = () => {
     if (!socket) return;
 
     const handleClassroomAdded = (data) => {
-      console.log('Added to classroom:', data);
+      console.log('Added to classroom (socket):', data);
       toast.success(`You've been added to ${data.classroom_name}!`);
       queryClient.invalidateQueries('classrooms');
     };
@@ -58,13 +58,26 @@ const DashboardPage = () => {
     };
 
     socket.on('classroom_added', handleClassroomAdded);
+    socket.on('added_to_classroom', handleClassroomAdded);
     socket.on('classroom_removed', handleClassroomRemoved);
 
     return () => {
       socket.off('classroom_added', handleClassroomAdded);
+      socket.off('added_to_classroom', handleClassroomAdded);
       socket.off('classroom_removed', handleClassroomRemoved);
     };
   }, [socket, queryClient]);
+
+  // Also listen via window CustomEvent (dispatched by SocketContext as a bridge)
+  useEffect(() => {
+    const handleClassroomAdded = (e) => {
+      console.log('New classroom added (window event):', e.detail);
+      queryClient.invalidateQueries('classrooms');
+      toast.success(`You've been added to ${e.detail.classroom_name}!`);
+    };
+    window.addEventListener('classroom_added', handleClassroomAdded);
+    return () => window.removeEventListener('classroom_added', handleClassroomAdded);
+  }, [queryClient]);
 
   // Filter classrooms based on search
   const filteredClassrooms = classrooms.filter(classroom =>

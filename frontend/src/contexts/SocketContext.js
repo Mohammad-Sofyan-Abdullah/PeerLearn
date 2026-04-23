@@ -61,6 +61,14 @@ export const SocketProvider = ({ children }) => {
         toast.error(data.error || 'Socket error occurred');
       });
 
+      // Notify any component that the current user was added to a classroom
+      const handleAddedToClassroom = (data) => {
+        console.log('Added to classroom:', data);
+        window.dispatchEvent(new CustomEvent('classroom_added', { detail: data }));
+      };
+      newSocket.on('added_to_classroom', handleAddedToClassroom);
+      newSocket.on('classroom_added', handleAddedToClassroom);
+
       setSocket(newSocket);
 
       return () => {
@@ -79,18 +87,30 @@ export const SocketProvider = ({ children }) => {
   }, [isAuthenticated, user]); // Avoid including socket to prevent reconnection loop
 
   const joinRoom = (roomId) => {
+    if (!roomId) return;
     if (socket && connected) {
-      if (currentRoom) {
+      if (currentRoom && currentRoom !== roomId) {
         socket.emit('leave_room', currentRoom);
       }
-      
-      socket.emit('join_room', roomId);
+      console.log('Socket emitting join_room:', roomId);
+      socket.emit('join_room', { room_id: roomId });
       setCurrentRoom(roomId);
+    } else if (socket) {
+      // Socket exists but not yet connected — join as soon as it connects
+      console.log('Socket not yet connected, queuing join_room for:', roomId);
+      const onConnect = () => {
+        console.log('Socket emitting join_room (queued):', roomId);
+        socket.emit('join_room', { room_id: roomId });
+        setCurrentRoom(roomId);
+        socket.off('connect', onConnect);
+      };
+      socket.on('connect', onConnect);
     }
   };
 
   const leaveRoom = () => {
     if (socket && currentRoom) {
+      console.log('Calling leaveRoom:', currentRoom);
       socket.emit('leave_room', currentRoom);
       setCurrentRoom(null);
     }

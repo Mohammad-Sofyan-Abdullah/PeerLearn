@@ -30,29 +30,43 @@ const ChatInterface = ({ room, classroom, user }) => {
 
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
-  const { socket, connected } = useSocket();
+  const { socket, connected, joinRoom, leaveRoom } = useSocket();
+
+  // Fix 2: Join the socket room when this component mounts / room changes.
+  // The cleanup function leaves the room so broadcasts from the old room
+  // don't fire while the user is looking at a different room.
+  const roomId = room.id || room._id;
+  useEffect(() => {
+    if (!roomId) return;
+    joinRoom(roomId);
+    return () => {
+      leaveRoom();
+    };
+  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch messages
   const { data: initialMessages = [], isLoading } = useQuery(
-    ['messages', room.id || room._id],
-    () => chatAPI.getMessages(room.id || room._id),
+    ['messages', roomId],
+    () => chatAPI.getMessages(roomId),
     {
       select: (response) => response.data,
-      enabled: !!(room.id || room._id),
+      enabled: !!roomId,
     }
   );
 
-  // Send message mutation
+  // Fix 4 (Part A): sendMessageMutation — remove the optimistic append from onSuccess.
+  // The socket 'new_message' event for OTHER users will handle their update.
+  // For the SENDER, we append the authoritative HTTP response here — single source of truth.
   const sendMessageMutation = useMutation(
-    ({ roomId, content }) => chatAPI.sendMessage(roomId, content),
+    ({ roomId: rId, content }) => chatAPI.sendMessage(rId, content),
     {
       onSuccess: (response) => {
-        console.log('Message sent successfully:', response);
-        // Optimistically add the message to the UI
-        const newMessage = response.data;
-        setMessages(prev => [...prev, newMessage]);
-        // Also invalidate to refetch in case there are differences
-        queryClient.invalidateQueries(['messages', room.id || room._id]);
+        // Inject sender_name so the message renders correctly without a refetch
+        const savedMessage = {
+          ...response.data,
+          sender_name: user?.name || 'Unknown',
+        };
+        setMessages(prev => [...prev, savedMessage]);
       },
       onError: (error) => {
         const errorMessage = error.response?.data?.detail;
@@ -73,7 +87,7 @@ const ChatInterface = ({ room, classroom, user }) => {
     ({ messageId, content }) => chatAPI.editMessage(messageId, content),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['messages', room.id || room._id]);
+        queryClient.invalidateQueries(['messages', roomId]);
         setEditingMessage(null);
         setEditContent('');
       },
@@ -94,7 +108,7 @@ const ChatInterface = ({ room, classroom, user }) => {
   // Delete message mutation
   const deleteMessageMutation = useMutation(chatAPI.deleteMessage, {
     onSuccess: () => {
-      queryClient.invalidateQueries(['messages', room.id || room._id]);
+      queryClient.invalidateQueries(['messages', roomId]);
       setShowMessageMenu(null);
     },
     onError: (error) => {
@@ -135,43 +149,47 @@ const ChatInterface = ({ room, classroom, user }) => {
 
   // Update messages when initial data loads
   useEffect(() => {
-    console.log('Initial messages loaded:', initialMessages);
-    setMessages(initialMessages);
-  }, [initialMessages]);
-
-  // Debug: Log messages state changes
-  useEffect(() => {
-    console.log('Messages state updated:', messages);
-  }, [messages]);
+    if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages);
+    }
+  }, [JSON.stringify(initialMessages)]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Socket event listeners
+  // Fix 4 (Part B): Socket event listeners.
+  // The new_message handler now SKIPS messages sent by the current user
+  // because the sender already appended the authoritative copy in sendMessageMutation.onSuccess.
+  // Without this guard the sender sees every message twice.
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (data) => {
-      console.log('Received new_message event:', data);
-      setMessages(prev => [...prev, data.message]);
+      // Normalise the socket payload so it matches the HTTP fetch shape
+      const incomingMsg = normaliseSocketMessage(data);
+      const senderId = String(incomingMsg.sender_id || '');
+      const currentUserId = String(user?.id || user?._id || user?.user_id || '');
+      // Skip if the current user sent this — they already have it from onSuccess
+      if (currentUserId && senderId === currentUserId) return;
+      setMessages(prev => [...prev, incomingMsg]);
     };
 
     const handleMessageEdited = (data) => {
-      console.log('Received message_edited event:', data);
-      setMessages(prev => 
-        prev.map(msg => 
+      setMessages(prev =>
+        prev.map(msg =>
           msg.id === data.message.id || msg._id === data.message._id ? data.message : msg
         )
       );
     };
 
     const handleMessageDeleted = (data) => {
-      console.log('Received message_deleted event:', data);
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === data.message_id || msg._id === data.message_id ? { ...msg, deleted: true } : msg
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === data.message_id || msg._id === data.message_id
+            ? { ...msg, deleted: true }
+            : msg
         )
       );
     };
@@ -185,14 +203,14 @@ const ChatInterface = ({ room, classroom, user }) => {
       socket.off('message_edited', handleMessageEdited);
       socket.off('message_deleted', handleMessageDeleted);
     };
-  }, [socket]);
+  }, [socket, user?.id, user?._id]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!message.trim() || !connected) return;
 
     sendMessageMutation.mutate({
-      roomId: room.id || room._id,
+      roomId,
       content: message.trim(),
     });
     setMessage('');
@@ -243,6 +261,36 @@ const ChatInterface = ({ room, classroom, user }) => {
     }
   };
 
+  /**
+   * Returns a reliable stable string ID for a message object.
+   * FastAPI serialises with _id (alias), so msg.id is often undefined.
+   * Always prefer _id, fall back to id.
+   */
+  const msgKey = (msg) => String(msg?._id || msg?.id || '');
+
+  /**
+   * Normalise a raw socket payload so it has exactly the same shape
+   * as a message returned by GET /rooms/{room_id}/messages.
+   * The socket handler in chat.py emits { message: {...}, sender_name, sender_avatar }.
+   * We pull sender_name/avatar into the message object so rendering logic can access it.
+   */
+  const normaliseSocketMessage = (payload) => {
+    const msg = payload.message || payload;
+    return {
+      ...msg,
+      sender_name: payload.sender_name || msg.sender_name || 'Unknown',
+      sender_avatar: payload.sender_avatar || msg.sender_avatar || null,
+    };
+  };
+
+  // Helper to determine if a message belongs to the current user
+  const isOwnMessage = (msg) => {
+    const senderId = String(msg?.sender_id || '');
+    // Try all possible ID fields — /auth/me Pydantic serialisation may vary
+    const userId = String(user?.id || user?._id || user?.user_id || '');
+    return senderId === userId && userId !== '';
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -286,108 +334,26 @@ const ChatInterface = ({ room, classroom, user }) => {
             </p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <motion.div
-              key={msg._id || msg.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`relative group max-w-xs lg:max-w-md ${msg.deleted ? 'opacity-50' : ''}`}>
-                {(editingMessage?.id === msg.id || editingMessage?._id === msg._id) ? (
-                  <div className="bg-white border border-gray-300 rounded-lg p-3">
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full resize-none border-none outline-none text-sm"
-                      rows="2"
-                      autoFocus
-                    />
-                    <div className="flex justify-end space-x-2 mt-2">
-                      <Button
-                        onClick={() => {
-                          setEditingMessage(null);
-                          setEditContent('');
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-gray-500 hover:text-gray-700 h-auto py-1 px-2"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleSaveEdit}
-                        disabled={!editContent.trim() || editMessageMutation.isLoading}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-primary-600 hover:text-primary-700 h-auto py-1 px-2"
-                      >
-                        Save
-                      </Button>
-                    </div>
+          messages.map((msg) => {
+            const own = isOwnMessage(msg);
+            return (
+              <div key={msg._id || msg.id} className={`flex w-full mb-2 ${own ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-xs lg:max-w-md ${own ? 'items-end' : 'items-start'} flex flex-col`}>
+                  {!own && (
+                    <span className="text-xs text-gray-500 mb-1 ml-1">
+                      {msg.sender_name || 'Unknown'}
+                    </span>
+                  )}
+                  <div className={`px-4 py-2 rounded-2xl ${own ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-900 rounded-bl-none'}`}>
+                    <p className="text-sm">{msg.content}</p>
                   </div>
-                ) : (
-                  <div
-                    className={`rounded-lg p-3 ${msg.sender_id === user?.id
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                      }`}
-                  >
-                    {msg.deleted ? (
-                      <p className="text-sm italic">This message was deleted</p>
-                    ) : (
-                      <>
-                        <p className="text-sm">{safeText(msg.content)}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs opacity-75">
-                            {format(new Date(msg.timestamp), 'HH:mm')}
-                          </span>
-                          {msg.edited && (
-                            <span className="text-xs opacity-75">(edited)</span>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Message menu */}
-                {!msg.deleted && (canEditMessage(msg) || canDeleteMessage(msg)) && (
-                  <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => setShowMessageMenu(showMessageMenu === (msg._id || msg.id) ? null : (msg._id || msg.id))}
-                      className="p-1 bg-white rounded-full shadow-md hover:bg-gray-50"
-                    >
-                      <MoreVertical className="h-4 w-4 text-gray-600" />
-                    </button>
-                    
-                    {showMessageMenu === (msg._id || msg.id) && (
-                      <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                        {canEditMessage(msg) && (
-                          <button
-                            onClick={() => handleEditMessage(msg)}
-                            className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            <Edit3 className="h-4 w-4 mr-2" />
-                            Edit
-                          </button>
-                        )}
-                        {canDeleteMessage(msg) && (
-                          <button
-                            onClick={() => handleDeleteMessage(msg._id || msg.id)}
-                            className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  <span className={`text-xs mt-1 text-gray-400 ${own ? 'text-right' : 'text-left'}`}>
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
               </div>
-            </motion.div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>

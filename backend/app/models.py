@@ -282,7 +282,7 @@ class YouTubeSession(YouTubeSessionBase):
 # Message Models
 class MessageBase(BaseModel):
     content: str
-    room_id: PyObjectId
+    room_id: Optional[PyObjectId] = None  # Optional: endpoint overrides from URL param
 
 class MessageCreate(MessageBase):
     pass

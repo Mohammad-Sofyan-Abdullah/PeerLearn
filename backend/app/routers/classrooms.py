@@ -16,6 +16,22 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/classrooms", tags=["classrooms"])
 
+# ---------------------------------------------------------------------------
+# Access-control helpers
+# The members array may contain ObjectIds (admin-added / join via invite) or
+# plain strings (legacy data).  Always compare via str() to handle both.
+# ---------------------------------------------------------------------------
+
+def is_classroom_member(classroom: dict, user_id: str) -> bool:
+    """Return True if user_id is the admin OR appears in the members list."""
+    admin_id = str(classroom.get('admin_id', ''))
+    members = [str(m) for m in classroom.get('members', [])]
+    return str(user_id) == admin_id or str(user_id) in members
+
+def is_classroom_admin(classroom: dict, user_id: str) -> bool:
+    """Return True if user_id is the classroom admin."""
+    return str(classroom.get('admin_id', '')) == str(user_id)
+
 @router.post("/", response_model=Classroom)
 async def create_classroom(
     classroom_data: ClassroomCreate,
@@ -34,7 +50,7 @@ async def create_classroom(
     classroom_dict = classroom_data.dict()
     classroom_dict.update({
         "admin_id": current_user.id,
-        "members": [current_user.id],  # Admin is automatically a member
+        "members": [ObjectId(str(current_user.id))],  # Store as ObjectId for consistency
         "invite_code": invite_code,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
@@ -67,11 +83,17 @@ async def get_user_classrooms(
     current_user: UserInDB = Depends(get_current_active_user),
     db = Depends(get_database)
 ):
-    """Get classrooms where user is a member"""
+    """Get classrooms where user is admin or a member"""
+    user_object_id = ObjectId(str(current_user.id))
     classrooms = await db.classrooms.find({
-        "members": current_user.id
+        "$or": [
+            {"admin_id": current_user.id},
+            {"admin_id": user_object_id},
+            {"members": current_user.id},
+            {"members": user_object_id},
+        ]
     }).to_list(length=100)
-    
+
     return [Classroom(**classroom) for classroom in classrooms]
 
 @router.get("/{classroom_id}", response_model=Classroom)
@@ -96,8 +118,11 @@ async def get_classroom(
             detail="Classroom not found"
         )
     
-    # Check if user is a member
-    if current_user.id not in classroom["members"]:
+    # Check access: admin or member (type-safe — members array may contain ObjectId or str)
+    user_str = str(current_user.id)
+    is_member = any(str(m) == user_str for m in classroom.get("members", []))
+    is_admin = str(classroom.get("admin_id", "")) == user_str
+    if not is_member and not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not a member of this classroom"
@@ -128,8 +153,8 @@ async def update_classroom(
             detail="Classroom not found"
         )
     
-    # Check if user is admin
-    if classroom["admin_id"] != current_user.id:
+    # Only admin may update
+    if not is_classroom_admin(classroom, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only classroom admin can update classroom"
@@ -163,17 +188,19 @@ async def join_classroom(
             detail="Invalid invite code"
         )
     
-    # Check if user is already a member
-    if current_user.id in classroom["members"]:
+    # Check if user is already a member (type-safe)
+    user_str = str(current_user.id)
+    already_member = any(str(m) == user_str for m in classroom.get("members", []))
+    if already_member:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Already a member of this classroom"
         )
     
-    # Add user to classroom
+    # Add user to classroom — store as ObjectId for type consistency with add_member
     await db.classrooms.update_one(
         {"_id": classroom["_id"]},
-        {"$addToSet": {"members": current_user.id}}
+        {"$addToSet": {"members": ObjectId(str(current_user.id))}}
     )
     
     return {"message": "Successfully joined classroom", "classroom_id": str(classroom["_id"])}
@@ -200,24 +227,27 @@ async def leave_classroom(
             detail="Classroom not found"
         )
     
-    # Check if user is admin
-    if classroom["admin_id"] == current_user.id:
+    # Admin cannot leave
+    if is_classroom_admin(classroom, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Admin cannot leave classroom. Transfer admin or delete classroom."
         )
     
-    # Check if user is a member
-    if current_user.id not in classroom["members"]:
+    # Check if user is a member (type-safe)
+    user_str = str(current_user.id)
+    if not any(str(m) == user_str for m in classroom.get("members", [])):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not a member of this classroom"
         )
     
-    # Remove user from classroom
+    # Remove user from classroom — pull both ObjectId and string variants
+    # to handle mixed-type members arrays from legacy data
+    user_oid = ObjectId(str(current_user.id))
     await db.classrooms.update_one(
         {"_id": classroom_object_id},
-        {"$pull": {"members": current_user.id}}
+        {"$pull": {"members": {"$in": [user_oid, str(current_user.id)]}}}
     )
     
     return {"message": "Successfully left classroom"}
@@ -262,8 +292,8 @@ async def add_member_to_classroom(
             detail="User not found"
         )
     
-    # Check if user is already a member
-    if user_object_id in classroom["members"]:
+    # Check if user is already a member (type-safe)
+    if is_classroom_member(classroom, str(user_object_id)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already a member of this classroom"
@@ -283,10 +313,13 @@ async def add_member_to_classroom(
     )
     
     # Emit socket event to notify the added user to refresh their classroom list
-    await sio.emit('classroom_added', {
+    payload = {
         'classroom_id': str(classroom_object_id),
-        'classroom_name': classroom['name']
-    }, room=str(user_object_id))
+        'classroom_name': classroom['name'],
+        'message': f"You have been added to {classroom['name']}"
+    }
+    await sio.emit('classroom_added', payload, room=str(user_object_id))
+    await sio.emit('added_to_classroom', payload, room=str(user_object_id))
     
     return {"message": f"Successfully added {user.get('username', 'user')} to classroom"}
 
@@ -329,8 +362,8 @@ async def remove_member_from_classroom(
             detail="Cannot remove classroom admin"
         )
     
-    # Check if user is a member
-    if user_object_id not in classroom["members"]:
+    # Check if user is a member (type-safe)
+    if not any(str(m) == str(user_object_id) for m in classroom.get("members", [])):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is not a member of this classroom"
@@ -372,8 +405,11 @@ async def get_classroom_members(
             detail="Classroom not found"
         )
     
-    # Check if user is a member
-    if current_user.id not in classroom["members"]:
+    # Check access: admin or member (type-safe)
+    user_str = str(current_user.id)
+    is_member = any(str(m) == user_str for m in classroom.get("members", []))
+    is_admin = str(classroom.get("admin_id", "")) == user_str
+    if not is_member and not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not a member of this classroom"
@@ -461,8 +497,8 @@ async def delete_classroom(
             detail="Classroom not found"
         )
     
-    # Check if user is admin
-    if classroom["admin_id"] != current_user.id:
+    # Only admin may delete
+    if not is_classroom_admin(classroom, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only classroom admin can delete classroom"
@@ -503,8 +539,8 @@ async def create_room(
             detail="Classroom not found"
         )
     
-    # Check if user is admin
-    if str(classroom["admin_id"]) != str(current_user.id):
+    # Only admin may create rooms
+    if not is_classroom_admin(classroom, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only classroom admin can create rooms"
@@ -558,8 +594,11 @@ async def get_classroom_rooms(
             detail="Classroom not found"
         )
     
-    # Check if user is a member
-    if current_user.id not in classroom["members"]:
+    # Check access: admin or member (type-safe)
+    user_str = str(current_user.id)
+    is_member = any(str(m) == user_str for m in classroom.get("members", []))
+    is_admin = str(classroom.get("admin_id", "")) == user_str
+    if not is_member and not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not a member of this classroom"
@@ -593,8 +632,8 @@ async def update_room(
             detail="Classroom not found"
         )
     
-    # Check if user is admin
-    if classroom["admin_id"] != current_user.id:
+    # Only admin may update rooms
+    if not is_classroom_admin(classroom, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only classroom admin can update rooms"
@@ -645,8 +684,8 @@ async def delete_room(
             detail="Classroom not found"
         )
     
-    # Check if user is admin
-    if classroom["admin_id"] != current_user.id:
+    # Only admin may delete rooms
+    if not is_classroom_admin(classroom, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only classroom admin can delete rooms"

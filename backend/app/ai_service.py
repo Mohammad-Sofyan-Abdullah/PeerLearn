@@ -735,22 +735,17 @@ Generate educational video suggestions that would complement this content and he
                         "role": "system",
                         "content": f"""You are an expert visual designer and educator. Create {count} slide visual descriptions based on the provided video summary.
                         
-                        The goal is to generate a PROMPT for an AI image generator (like Gemini/Imagen) to create a FULL PRESENTATION SLIDE image.
-                        The image itself should contain the text and the visual elements.
-                        
-                        For each slide, provide:
-                        1. A catchy Title (for internal reference)
-                        2. "image_prompt": A highly detailed prompt describing a presentation slide. 
-                           - Specify the background (e.g., solid dark, gradient, abstract tech).
-                           - Explicitly state the TEXT to appear on the slide (Title and max 3 short bullet points). 
-                           - Describe the layout (e.g., Title at top, text on left, illustrative diagram on right).
-                           - Use keywords like "high quality presentation slide", "modern UI", "infographic style", "4k", "clear text".
-                        
+                        Create structured slide content. For each slide provide:
+                        1. "title": A concise, engaging slide title
+                        2. "bullets": An array of 3-4 short, clear bullet point strings (each max 10 words)
+                        3. "image_prompt": A short color/theme description for the background only (e.g. "dark navy blue", "light gray professional", "deep teal", "rich purple")
+
                         Return ONLY a JSON array of objects:
                         [
                           {{
-                            "title": "Title for Ref",
-                            "image_prompt": "A modern presentation slide with a dark blue background. Title 'Introduction to AI' in bold white font at the top. Three bullet points: '1. Machine Learning basics', '2. Neural Networks', '3. Real-world apps'. On the right, a glowing brain circuit diagram. High resolution, professional design."
+                            "title": "Introduction to Machine Learning",
+                            "bullets": ["Algorithms that learn from data", "Powers modern AI applications", "Three types: supervised, unsupervised, reinforcement"],
+                            "image_prompt": "dark navy blue professional"
                           }}
                         ]"""
                     },
@@ -782,35 +777,127 @@ Generate educational video suggestions that would complement this content and he
             logger.error(f"Error generating slide content: {e}")
             raise
 
-    async def generate_slide_image(self, prompt: str) -> bytes:
-        """Generate an image using Gemini (Imagen) based on prompt"""
+    async def generate_slide_image(self, slide: dict) -> bytes:
+        """Generate a complete slide image with gradient background and text overlay using PIL"""
         try:
-            # Using the new google-genai SDK 
-            if not hasattr(self, 'genai_client'):
-                self.genai_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            import io
+            import hashlib
+            from PIL import Image, ImageDraw, ImageFont
 
-            logger.info(f"Generating image with gemini-3-pro-image for prompt: {prompt[:30]}...")
-            
-            # Run synchronous generation in thread
-            import asyncio
-            response = await asyncio.to_thread(
-                self.genai_client.models.generate_content,
-                model="gemini-3-pro-image-preview",
-                contents=prompt
-            )
-            
-            # Extract image bytes from response
-            for part in response.parts:
-                if part.inline_data:
-                    # part.inline_data.data is bytes
-                    return part.inline_data.data
-            
-            logger.warning("No inline data (image) found in response.")
-            return None
-            
+            title = slide.get("title", "Untitled Slide")
+            bullets = slide.get("bullets", [])
+            prompt = slide.get("image_prompt", "")
+
+            # Professional color themes: (top, bottom, is_dark)
+            themes = [
+                ((15, 32, 78),   (25, 55, 120),   True),   # Deep navy blue
+                ((30, 30, 45),   (55, 60, 95),    True),   # Dark charcoal-indigo
+                ((18, 58, 68),   (35, 100, 115),  True),   # Professional teal
+                ((45, 18, 65),   (80, 40, 110),   True),   # Rich purple
+                ((20, 50, 35),   (35, 85, 60),    True),   # Forest green
+                ((245, 247, 250),(215, 225, 240), False),  # Clean light gray
+            ]
+
+            p = prompt.lower()
+            if "light" in p or "white" in p or "gray" in p or "grey" in p:
+                color1, color2, is_dark = themes[5]
+            elif "blue" in p or "navy" in p:
+                color1, color2, is_dark = themes[0]
+            elif "teal" in p or "cyan" in p:
+                color1, color2, is_dark = themes[2]
+            elif "purple" in p or "violet" in p or "indigo" in p:
+                color1, color2, is_dark = themes[3]
+            elif "green" in p or "forest" in p:
+                color1, color2, is_dark = themes[4]
+            else:
+                idx = int(hashlib.md5(prompt[:30].encode()).hexdigest(), 16) % 5
+                color1, color2, is_dark = themes[idx]
+
+            width, height = 1024, 768
+            img = Image.new("RGB", (width, height))
+            draw = ImageDraw.Draw(img)
+
+            # Draw vertical gradient background
+            for y in range(height):
+                t = y / (height - 1)
+                r = int(color1[0] + (color2[0] - color1[0]) * t)
+                g = int(color1[1] + (color2[1] - color1[1]) * t)
+                b = int(color1[2] + (color2[2] - color1[2]) * t)
+                draw.line([(0, y), (width, y)], fill=(r, g, b))
+
+            # Left accent bar
+            accent = (255, 200, 60) if is_dark else (60, 100, 200)
+            draw.rectangle([(0, 0), (7, height)], fill=accent)
+
+            # Text colors
+            title_color = (255, 255, 255) if is_dark else (15, 30, 70)
+            bullet_color = (195, 220, 255) if is_dark else (50, 80, 155)
+
+            # Load fonts — try Windows then Linux paths
+            title_font = None
+            body_font = None
+            font_paths = [
+                ("C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf"),
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+                ("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                 "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+            ]
+            for bold_path, reg_path in font_paths:
+                try:
+                    title_font = ImageFont.truetype(bold_path, 54)
+                    body_font = ImageFont.truetype(reg_path, 30)
+                    break
+                except Exception:
+                    continue
+            if not title_font:
+                title_font = ImageFont.load_default()
+                body_font = ImageFont.load_default()
+
+            margin = 70
+            max_width = width - margin * 2
+
+            def wrap_text(text, font, max_w):
+                words = text.split()
+                lines, current = [], ""
+                for word in words:
+                    test = (current + " " + word).strip()
+                    bbox = draw.textbbox((0, 0), test, font=font)
+                    if bbox[2] - bbox[0] <= max_w:
+                        current = test
+                    else:
+                        if current:
+                            lines.append(current)
+                        current = word
+                if current:
+                    lines.append(current)
+                return lines
+
+            # Draw title (max 2 lines)
+            y_pos = 80
+            for line in wrap_text(title, title_font, max_width)[:2]:
+                draw.text((margin, y_pos), line, font=title_font, fill=title_color)
+                y_pos += 68
+
+            # Accent divider under title
+            y_pos += 10
+            draw.rectangle([(margin, y_pos), (width - margin, y_pos + 3)], fill=accent)
+            y_pos += 28
+
+            # Draw bullet points
+            for bullet in bullets[:5]:
+                for bline in wrap_text(f"\u2022  {bullet}", body_font, max_width - 20)[:2]:
+                    draw.text((margin + 15, y_pos), bline, font=body_font, fill=bullet_color)
+                    y_pos += 44
+                y_pos += 6
+
+            buf = io.BytesIO()
+            img.save(buf, format="PNG", optimize=True)
+            logger.info(f"Slide image generated: '{title[:40]}' ({width}x{height})")
+            return buf.getvalue()
+
         except Exception as e:
             logger.error(f"Error generating slide image: {e}")
-            # Return None to allow process to continue without image
             return None
 
     async def create_slides_pdf(self, slides_data: List[Dict[str, Any]], output_path: str):
@@ -1047,19 +1134,29 @@ Create educational flashcards based on the concepts in this document. Focus on s
             logger.error(f"Error generating document flashcards: {e}")
             raise ValueError(f"Document flashcard generation failed: {str(e)}")
 
-    async def generate_document_quiz(self, content: str, document_title: str, count: int = 10) -> dict:
+    async def generate_document_quiz(self, content: str, document_title: str, count: int = 10, difficulty: str = 'medium') -> dict:
         """Generate a multiple-choice quiz from document content"""
         try:
-            logger.info(f"Generating quiz for document: {document_title}")
-            
+            logger.info(f"Generating quiz for document: {document_title} (difficulty={difficulty})")
+
+            # Difficulty-specific instructions
+            difficulty_instructions = {
+                'easiest': 'Generate ONLY recall-level questions. Questions should ask about basic facts, definitions, and direct information explicitly stated in the document. All wrong options should be clearly distinguishable.',
+                'easy': 'Generate comprehension-level questions. Students should be able to find the answer by carefully reading the document. Avoid trick questions.',
+                'medium': 'Generate a mix of comprehension and application questions. Some answers require connecting two pieces of information from the document.',
+                'hard': 'Generate application and analysis questions. Students must synthesize multiple concepts from the document. Wrong options should be plausible.',
+                'hardest': 'Generate evaluation and critical thinking questions. Questions should require deep understanding, inference, and the ability to identify implications not directly stated. All options should be highly plausible.'
+            }
+            difficulty_instruction = difficulty_instructions.get(difficulty, difficulty_instructions['medium'])
+
             # Truncate content if too long
             if len(content) > 20000:
                 content = content[:20000] + "...(truncated)"
-            
+
             word_count = len(content.split())
             suggested_count = min(15, max(5, word_count // 200))
             actual_count = min(count, suggested_count) if count else suggested_count
-            
+
             response = self.client.chat.completions.create(
                 model="openai/gpt-oss-120b",
                 messages=[
@@ -1072,7 +1169,7 @@ QUIZ REQUIREMENTS:
 - Provide 4 answer options (A, B, C, D) for each question
 - Only ONE correct answer per question
 - Include plausible distractors (wrong answers that seem reasonable)
-- Cover different topics and difficulty levels
+- DIFFICULTY LEVEL: {difficulty_instruction}
 - Include explanation for why the correct answer is right
 
 QUESTION TYPES:

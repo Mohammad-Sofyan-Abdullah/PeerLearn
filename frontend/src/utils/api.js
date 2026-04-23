@@ -324,7 +324,7 @@ export const notesAPI = {
   clearSessionChat: (sessionId) => api.post(`/notes/sessions/${sessionId}/chat/clear`),
   generateFlashcards: (sessionId, count = 15) => api.post(`/notes/sessions/${sessionId}/flashcards`, { count }),
   explainFlashcard: (sessionId, question, answer) => api.post(`/notes/sessions/${sessionId}/flashcards/explain`, { question, answer }),
-  generateQuiz: (sessionId, count = 10) => api.post(`/notes/sessions/${sessionId}/quiz`, { count }),
+  generateQuiz: (sessionId, count = 10, difficulty = 'medium') => api.post(`/notes/sessions/${sessionId}/quiz`, { count, difficulty }),
   generateSlides: (sessionId, count = 5) => api.post(`/notes/sessions/${sessionId}/slides`, { count }),
   regenerateSummaries: (sessionId) => longRunningApi.post(`/notes/sessions/${sessionId}/regenerate-summaries`),
 

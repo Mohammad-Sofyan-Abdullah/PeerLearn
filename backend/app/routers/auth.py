@@ -245,10 +245,13 @@ async def refresh_token(
         "token_type": "bearer"
     }
 
-@router.get("/me", response_model=User)
+@router.get("/me")
 async def get_current_user_info(current_user: UserInDB = Depends(get_current_active_user)):
-    """Get current user information"""
-    return User(**current_user.dict())
+    """Get current user information — returns plain dict so id is never lost in Pydantic alias serialisation"""
+    user_dict = current_user.dict()
+    # current_user.id is already a string (auth.py line 88 converts ObjectId → str before UserInDB(**user))
+    user_dict["id"] = str(current_user.id) if current_user.id else None
+    return user_dict
 
 @router.put("/me", response_model=User)
 async def update_current_user(

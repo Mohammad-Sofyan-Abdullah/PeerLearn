@@ -1112,6 +1112,7 @@ async def explain_document_flashcard(
 async def generate_document_quiz(
     session_id: str,
     count: int = Body(10, embed=True),
+    difficulty: str = Body('medium', embed=True),
     current_user: UserInDB = Depends(get_current_active_user),
     db = Depends(get_database)
 ):
@@ -1148,11 +1149,13 @@ async def generate_document_quiz(
         quiz_data = await ai_service.generate_document_quiz(
             content=content,
             document_title=session["document_title"],
-            count=count
+            count=count,
+            difficulty=difficulty
         )
         
-        # Set the generated_at timestamp
+        # Set the generated_at timestamp and preserve the difficulty
         quiz_data["generated_at"] = datetime.utcnow()
+        quiz_data["difficulty"] = difficulty
         
         # Update session
         await db.document_sessions.update_one(
@@ -1201,7 +1204,7 @@ async def process_document_slide_generation(session_id: str, summary: str, count
         for i, slide in enumerate(slides_content):
             if "image_prompt" in slide:
                 try:
-                    img_bytes = await ai_service.generate_slide_image(slide["image_prompt"])
+                    img_bytes = await ai_service.generate_slide_image(slide)
                     
                     if img_bytes:
                         slide["image_bytes"] = img_bytes

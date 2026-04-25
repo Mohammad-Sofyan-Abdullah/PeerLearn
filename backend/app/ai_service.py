@@ -83,16 +83,30 @@ class AIService:
                     {
                         "role": "system",
                         "content": f"""You are an AI assistant helping students create study notes from their classroom discussions in the '{room_name}' room.
-                        
-                        Create a comprehensive summary that includes:
-                        1. Key topics discussed
-                        2. Important concepts and definitions
-                        3. Questions raised and answers provided
-                        4. Action items or follow-ups
-                        5. Study recommendations
-                        
-                        Format the summary in a clear, organized manner suitable for study notes.
-                        Focus on educational value and learning outcomes."""
+
+Create a comprehensive summary using clean markdown formatting:
+
+## Key Topics Discussed
+[bullet list of main topics]
+
+## Important Concepts & Definitions
+[bullet list of concepts and definitions covered]
+
+## Questions & Answers
+[notable Q&A from the discussion]
+
+## Action Items & Follow-ups
+[any tasks or next steps mentioned]
+
+## Study Recommendations
+[suggestions for further learning]
+
+FORMATTING RULES:
+- Use ## for section headers
+- Use **bold** for important terms
+- Use bullet points (- ) for lists
+- Keep paragraphs short and scannable
+- Do not wrap the entire response in a code block"""
                     },
                     {
                         "role": "user",
@@ -346,24 +360,29 @@ Create educational flashcards based on the concepts in this content. Focus on sp
                     {
                         "role": "system",
                         "content": f"""You are an expert educational tutor helping students master concepts from the video '{video_title}'.
-                        
-                        A student is studying with flashcards and needs a comprehensive explanation. Provide an educational explanation that:
-                        
-                        1. **Clarifies the Answer**: Explain the answer in simple, clear terms
-                        2. **Provides Context**: Use specific examples and details from the video content
-                        3. **Shows Connections**: Link this concept to related topics mentioned in the video
-                        4. **Explains Importance**: Help the student understand WHY this concept matters
-                        5. **Aids Memory**: Include memorable examples, analogies, or mnemonics when appropriate
-                        6. **Encourages Application**: Suggest how this knowledge can be used or applied
-                        
-                        TEACHING APPROACH:
-                        - Use clear, educational language appropriate for learning
-                        - Break down complex concepts into understandable parts
-                        - Provide specific examples from the video content
-                        - Help the student see the bigger picture
-                        - Encourage deeper thinking about the concept
-                        
-                        CRITICAL: Base your explanation entirely on the provided video context. Do not add information not present in the text."""
+
+Provide a comprehensive explanation using clean markdown:
+
+## Answer Explained
+[Clear explanation of the answer in simple terms]
+
+## Context from the Video
+[Specific examples and details from the video content]
+
+## Why This Matters
+[Importance and real-world application of this concept]
+
+## Memory Aid
+[A memorable example, analogy, or mnemonic when appropriate]
+
+FORMATTING RULES:
+- Use ## for section headers
+- Use **bold** for key terms
+- Use - for bullet points
+- Keep explanations clear and educational
+- Do not wrap the entire response in a code block
+
+CRITICAL: Base your explanation entirely on the provided video context."""
                     },
                     {
                         "role": "user",
@@ -373,7 +392,7 @@ Student's Answer to Review: {answer}
 Video Context and Content:
 {context}
 
-Please provide a comprehensive educational explanation that helps the student understand this concept deeply, using specific information and examples from the video context above."""
+Provide a comprehensive educational explanation using the video context above."""
                     }
                 ],
                 temperature=0.6,
@@ -386,14 +405,14 @@ Please provide a comprehensive educational explanation that helps the student un
             
         except Exception as e:
             logger.error(f"Error generating flashcard explanation: {e}")
-            return f"""**Answer Explanation:**
+            return f"""## Answer Explanation
 {answer}
 
-**Context:** This concept is discussed in the video '{video_title}'. 
+**Context:** This concept is discussed in the video '{video_title}'.
 
-**Study Tip:** Review the video transcript and summary for more detailed examples and context about this topic. Understanding the broader context will help you remember and apply this concept more effectively.
+**Study Tip:** Review the video transcript and summary for more detailed examples and context about this topic.
 
-**Next Steps:** Try to think of real-world examples where this concept might apply, or how it connects to other topics you've learned."""
+**Next Steps:** Try to think of real-world examples where this concept might apply."""
 
     async def generate_notes_from_document(self, content: str, document_title: str, user_prompt: str) -> str:
         """Generate structured notes from document content based on user prompt"""
@@ -404,32 +423,55 @@ Please provide a comprehensive educational explanation that helps the student un
             if len(content) > 15000:
                 content = content[:15000] + "...(truncated)"
             
+            # Detect the action type from the prompt and tailor format
+            prompt_lower = user_prompt.lower()
+            if "bullet" in prompt_lower or "bullet-point" in prompt_lower:
+                format_instruction = """Return ONLY clean bullet points grouped by topic:
+- Use ## for topic group headers
+- Use - for each bullet point
+- Keep bullets concise (one idea per bullet)
+- No long paragraphs"""
+            elif "definition" in prompt_lower:
+                format_instruction = """Return a definition list:
+- Use **Term**: explanation format for each definition
+- Group related terms under ## section headers
+- Keep definitions concise and clear"""
+            elif "question" in prompt_lower or "quiz" in prompt_lower:
+                format_instruction = """Return numbered study questions:
+1. Question text
+   - Brief context or hint
+
+Group questions by topic using ## headers."""
+            elif "summarize" in prompt_lower or "key point" in prompt_lower:
+                format_instruction = """Return a bulleted summary:
+## Key Points
+- Each key point as a bullet
+- Use **bold** for important terms
+- Brief explanation after each point"""
+            else:
+                format_instruction = """Return structured notes:
+## [Main Topic]
+- Key points as bullets
+- Use **bold** for important terms
+- Use numbered lists for steps or sequences"""
+            
             response = self.client.chat.completions.create(
                 model="openai/gpt-oss-20b",
                 messages=[
                     {
                         "role": "system",
-                        "content": """You are an expert note-taking assistant for students. Your task is to help students create structured, comprehensive notes from their documents.
-
-GUIDELINES:
-- Create well-organized notes with clear headings and subheadings
-- Use bullet points, numbered lists, and simple formatting for clarity
-- Focus on key concepts, definitions, and important information
-- Make notes concise but comprehensive
-- Use PLAIN TEXT formatting only - no markdown symbols
-- Include examples when relevant
-- Organize information logically
+                        "content": f"""You are an expert note-taking assistant for students. Generate structured, well-formatted notes from documents.
 
 FORMATTING RULES:
-- Use simple text headings (no # symbols)
-- Use - or * for bullet points (but keep it simple)
-- Use CAPITAL LETTERS for emphasis instead of **bold**
-- Use simple indentation for structure
-- NO markdown symbols like #, **, `, >, etc.
-- Keep formatting clean and readable
+{format_instruction}
 
-RESPONSE FORMAT:
-Return only clean, plain text notes that are easy to read and edit in a simple text editor."""
+GENERAL RULES:
+- Use ## for section headers (never plain text headers)
+- Use **bold** for important terms and concepts
+- Use - for bullet points (never * or other symbols for bullets)
+- Use numbered lists (1. 2. 3.) for steps or sequences
+- Keep paragraphs short and scannable
+- Do not wrap the entire response in a code block"""
                     },
                     {
                         "role": "user",
@@ -440,7 +482,7 @@ User Request: {user_prompt}
 Document Content:
 {content}
 
-Please generate clean, well-structured notes based on the user's request and the document content above. Use only plain text formatting - no markdown symbols."""
+Generate well-structured markdown notes based on the user's request."""
                     }
                 ],
                 temperature=0.3,
@@ -448,11 +490,7 @@ Please generate clean, well-structured notes based on the user's request and the
             )
             
             notes = response.choices[0].message.content.strip()
-            
-            # Clean up any remaining markdown symbols
-            notes = self._clean_markdown_symbols(notes)
-            
-            logger.info("Successfully generated clean notes from document")
+            logger.info("Successfully generated notes from document")
             return notes
             
         except Exception as e:
@@ -498,26 +536,26 @@ Please generate clean, well-structured notes based on the user's request and the
             messages = [
                 {
                     "role": "system",
-                    "content": f"""You are an AI assistant helping a student understand and work with their document titled "{document_title}".
+                    "content": f"""You are an expert study assistant helping a student understand and work with their document titled "{document_title}".
 
 DOCUMENT CONTEXT:
 {content}
 
 CAPABILITIES:
-- Answer questions about the document content
-- Explain concepts mentioned in the document
+- Answer questions about the document content clearly and helpfully
+- Explain concepts mentioned in the document with examples
 - Generate notes, summaries, or bullet points
 - Help with understanding and analysis
-- Suggest improvements or additions
-- Create structured content based on the document
+- Structure answers with headers when covering multiple points
 
-RESPONSE GUIDELINES:
-- Base your responses on the document content provided
-- Be helpful, educational, and encouraging
-- Use clear, student-friendly language
-- When generating content to be inserted, use PLAIN TEXT only - no markdown symbols
-- If asked to create notes or summaries, make them clean and easy to read
-- Keep responses conversational and helpful"""
+FORMATTING RULES:
+- Use ## for section headers when covering multiple points
+- Use **bold** for important terms and concepts
+- Use bullet points (- ) for lists — never use * as bullet symbols
+- Use numbered lists for steps or sequences
+- Keep paragraphs short and scannable
+- Be concise but thorough
+- Do not wrap the entire response in a code block"""
                 }
             ]
             
@@ -538,11 +576,7 @@ RESPONSE GUIDELINES:
             )
             
             ai_response = response.choices[0].message.content.strip()
-            
-            # Clean up any markdown symbols in the response
-            ai_response = self._clean_markdown_symbols(ai_response)
-            
-            logger.info("Successfully generated clean chat response for document")
+            logger.info("Successfully generated chat response for document")
             return ai_response
             
         except Exception as e:
@@ -987,18 +1021,41 @@ Generate educational video suggestions that would complement this content and he
                         "role": "system",
                         "content": """You are an expert document summarizer for educational content. Generate two summaries from the provided document.
 
+The short_summary must follow this structure (in plain markdown that will be rendered):
+## Overview
+[2-3 sentence overview]
+
+## Key Points
+[bullet list of main ideas]
+
+## Conclusion
+[main takeaway]
+
+The detailed_summary must follow this structure:
+## Overview
+[brief overview]
+
+## Key Concepts
+[bullet list of main concepts with **bold** terms]
+
+## Important Details
+[notable specifics, examples, data points]
+
+## Summary
+[comprehensive conclusion]
+
+FORMATTING RULES for both summaries:
+- Use ## for section headers
+- Use **bold** for important terms
+- Use - for bullet points
+- Keep paragraphs short
+- Do not wrap in a code block
+
 OUTPUT FORMAT (JSON only):
 {
-  "short_summary": "A concise 2-3 paragraph overview of the document's main points",
-  "detailed_summary": "A comprehensive summary covering all key concepts, definitions, processes, and important details from the document. Use bullet points and organize by topics."
-}
-
-GUIDELINES:
-- For short summary: Focus on the main thesis, key takeaways, and core message
-- For detailed summary: Include all important concepts, definitions, examples, and supporting details
-- Use clear, educational language
-- Organize content logically
-- Highlight key terms and concepts"""
+  "short_summary": "markdown formatted short summary here",
+  "detailed_summary": "markdown formatted detailed summary here"
+}"""
                     },
                     {
                         "role": "user",
@@ -1007,7 +1064,7 @@ GUIDELINES:
 Document Content:
 {content}
 
-Generate comprehensive summaries for this document. Return only valid JSON."""
+Generate comprehensive markdown-formatted summaries for this document. Return only valid JSON."""
                     }
                 ],
                 temperature=0.3,

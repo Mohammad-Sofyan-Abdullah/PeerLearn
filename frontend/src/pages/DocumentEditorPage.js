@@ -18,18 +18,27 @@ import {
   Highlighter,
   Trash2,
   RefreshCw,
-  Camera
+  Camera,
+  Share2,
+  Eye
 } from 'lucide-react';
 import { notesAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useSocket } from '../contexts/SocketContext';
+import { useAuth } from '../contexts/AuthContext';
+import ShareNoteModal from '../components/ShareNoteModal';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 
 const DocumentEditorPage = () => {
   const { documentId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const editorRef = useRef(null);
-  
+  const broadcastTimerRef = useRef(null);
+  const { joinDocument, leaveDocument, broadcastDocumentUpdate } = useSocket();
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [chatMessage, setChatMessage] = useState('');
@@ -38,13 +47,14 @@ const DocumentEditorPage = () => {
   const [fontSize, setFontSize] = useState('16');
   const [fontFamily, setFontFamily] = useState('Inter');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
+  const [showShareModal, setShowShareModal] = useState(false);
+
   // Simple undo/redo state
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
 
   // Fetch document
-  const { data: document, isLoading } = useQuery(
+  const { data: noteDocument, isLoading } = useQuery(
     ['document', documentId],
     () => notesAPI.getDocument(documentId).then(res => res.data),
     {
@@ -52,10 +62,8 @@ const DocumentEditorPage = () => {
         setTitle(data.title);
         setContent(data.content || '');
         setUndoStack([data.content || '']);
-        // Set initial content in editor
-        if (editorRef.current) {
-          editorRef.current.innerHTML = data.content || '';
-        }
+        // NOTE: innerHTML is set via the useEffect below to avoid
+        // overwriting user edits on every react-query refetch.
       },
       onError: () => {
         toast.error('Failed to load document');
@@ -63,6 +71,57 @@ const DocumentEditorPage = () => {
       }
     }
   );
+
+  // Populate editor ONLY when it is empty (first load or empty state).
+  // This prevents save-triggered invalidateQueries refetches from
+  // overwriting content the user is actively editing.
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || !noteDocument?.content) return;
+    if (editor.innerHTML === '' || editor.innerHTML === '<br>') {
+      editor.innerHTML = noteDocument.content;
+    }
+  }, [noteDocument?.content]);
+
+  // Join/leave document socket room for collaborative editing
+  useEffect(() => {
+    if (documentId) {
+      joinDocument(documentId);
+    }
+    return () => {
+      if (documentId) leaveDocument(documentId);
+      if (broadcastTimerRef.current) clearTimeout(broadcastTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentId]);
+
+  // Listen for remote document updates (sent by other collaborators)
+  useEffect(() => {
+    const handleRemoteUpdate = (e) => {
+      const { document_id, html } = e.detail || {};
+      if (document_id !== documentId || !editorRef.current) return;
+
+      // Save and restore cursor position (best-effort for last-write-wins)
+      const sel = window.getSelection();
+      let savedRange = null;
+      if (sel && sel.rangeCount > 0) {
+        savedRange = sel.getRangeAt(0).cloneRange();
+      }
+
+      editorRef.current.innerHTML = html;
+      setContent(html);
+
+      // Try to restore cursor
+      if (savedRange) {
+        try {
+          sel.removeAllRanges();
+          sel.addRange(savedRange);
+        } catch (_) { /* ignore if node no longer exists */ }
+      }
+    };
+    window.addEventListener('remote_document_update', handleRemoteUpdate);
+    return () => window.removeEventListener('remote_document_update', handleRemoteUpdate);
+  }, [documentId]);
 
   // Fetch chat history
   const { data: chatData } = useQuery(
@@ -136,7 +195,7 @@ const DocumentEditorPage = () => {
     {
       onSuccess: (response) => {
         const generatedNotes = response.data.notes;
-        insertTextAtCursor(generatedNotes);
+        insertHtmlAtCursor(markdownToHtml(generatedNotes));
         toast.success('Notes generated and inserted');
       },
       onError: () => toast.error('Failed to generate notes')
@@ -176,15 +235,12 @@ const DocumentEditorPage = () => {
     saveToUndoStack();
 
     try {
-      // Focus the editor first
-      editor.focus();
-      
-      // Apply the formatting
+      // Do NOT call editor.focus() here — it would clear the text selection
       document.execCommand(command, false, value);
-      
+
       // Update content state
       handleContentChange(editor.innerHTML);
-      
+
     } catch (error) {
       console.error('Formatting error:', error);
       // Fallback to manual formatting
@@ -295,20 +351,14 @@ const DocumentEditorPage = () => {
 
   // Save function
   const handleSave = useCallback(() => {
-    if (!hasUnsavedChanges) return;
-    
-    // Convert HTML to clean text for storage
-    let cleanContent = content;
-    // Keep basic HTML formatting for storage
-    cleanContent = cleanContent.replace(/<div>/g, '\n').replace(/<\/div>/g, '');
-    cleanContent = cleanContent.replace(/<br\s*\/?>/g, '\n');
-    cleanContent = cleanContent.replace(/&nbsp;/g, ' ');
-    
+    // Store the raw HTML directly — preserves all rich formatting
+    const rawHtml = editorRef.current ? editorRef.current.innerHTML : content;
+
     updateDocumentMutation.mutate({
       title: title.trim(),
-      content: cleanContent
+      content: rawHtml
     });
-  }, [hasUnsavedChanges, title, content, updateDocumentMutation]);
+  }, [title, content, updateDocumentMutation]);
 
   // Delete function
   const handleDelete = useCallback(() => {
@@ -317,7 +367,84 @@ const DocumentEditorPage = () => {
     }
   }, [deleteDocumentMutation]);
 
-  // Insert text at cursor
+  // Convert markdown to HTML for insertion into the contentEditable editor
+  const markdownToHtml = useCallback((markdown) => {
+    if (!markdown) return '';
+    let html = markdown;
+
+    // Strip wrapping ```html ... ``` or ``` ... ``` code fences the AI sometimes adds
+    html = html.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/, '');
+
+    // Already looks like HTML — return as-is
+    if (/^\s*<[a-z]/i.test(html)) return html;
+
+    // Headers (must run before bold/italic so ## isn't eaten mid-line)
+    html = html.replace(/^### (.+)$/gm, '<h3 style="font-size:1.1rem;font-weight:700;margin:1rem 0 0.4rem">$1</h3>');
+    html = html.replace(/^## (.+)$/gm,  '<h2 style="font-size:1.25rem;font-weight:700;margin:1.2rem 0 0.5rem">$1</h2>');
+    html = html.replace(/^# (.+)$/gm,   '<h1 style="font-size:1.5rem;font-weight:700;margin:1.4rem 0 0.6rem">$1</h1>');
+
+    // Bold and italic
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+    // Collect consecutive list items into a single <ul>
+    const lines = html.split('\n');
+    const out = [];
+    let inList = false;
+    for (const line of lines) {
+      const bulletMatch = line.match(/^[-*+]\s+(.+)$/);
+      const orderedMatch = line.match(/^\d+\.\s+(.+)$/);
+      if (bulletMatch) {
+        if (!inList) { out.push('<ul style="list-style:disc;padding-left:1.5rem;margin:0.5rem 0">'); inList = 'ul'; }
+        out.push(`<li>${bulletMatch[1]}</li>`);
+      } else if (orderedMatch) {
+        if (!inList) { out.push('<ol style="list-style:decimal;padding-left:1.5rem;margin:0.5rem 0">'); inList = 'ol'; }
+        out.push(`<li>${orderedMatch[1]}</li>`);
+      } else {
+        if (inList) { out.push(`</${inList}>`); inList = false; }
+        out.push(line);
+      }
+    }
+    if (inList) out.push(`</${inList}>`);
+    html = out.join('\n');
+
+    // Wrap remaining plain-text lines (not already wrapped in a block element) in <p>
+    html = html.replace(
+      /^(?!\s*<[huo]|\s*<li|\s*<\/|\s*$)(.+)$/gm,
+      '<p style="margin:0.4rem 0">$1</p>'
+    );
+
+    // Double newlines between blocks
+    html = html.replace(/\n{2,}/g, '\n');
+
+    return html;
+  }, []);
+
+  // Insert HTML into the contentEditable editor at the current cursor position
+  const insertHtmlAtCursor = useCallback((html) => {
+    saveToUndoStack();
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+
+    const divider = '<hr style="border:none;border-top:1px solid #e5e7eb;margin:1rem 0"/>';
+    const payload = divider + html;
+
+    // execCommand('insertHTML') inserts real DOM nodes at the cursor
+    const success = document.execCommand('insertHTML', false, payload);
+
+    if (!success) {
+      // Fallback: append to end
+      editor.innerHTML += payload;
+    }
+
+    handleContentChange(editor.innerHTML);
+  }, [saveToUndoStack, handleContentChange]);
+
+  // Insert plain text at cursor (kept for other callers)
   const insertTextAtCursor = useCallback((text) => {
     saveToUndoStack();
     
@@ -350,12 +477,19 @@ const DocumentEditorPage = () => {
     }
   }, [saveToUndoStack, handleContentChange]);
 
-  // Handle editor input
+  // Handle editor input — update state and broadcast to collaborators
   const handleEditorInput = useCallback(() => {
     if (editorRef.current) {
-      handleContentChange(editorRef.current.innerHTML);
+      const html = editorRef.current.innerHTML;
+      handleContentChange(html);
+
+      // Debounced broadcast (300 ms)
+      if (broadcastTimerRef.current) clearTimeout(broadcastTimerRef.current);
+      broadcastTimerRef.current = setTimeout(() => {
+        broadcastDocumentUpdate(documentId, html);
+      }, 300);
     }
-  }, [handleContentChange]);
+  }, [handleContentChange, broadcastDocumentUpdate, documentId]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -497,6 +631,7 @@ const DocumentEditorPage = () => {
               {/* Formatting Controls */}
               <div className="flex items-center space-x-1 border-r border-gray-200 pr-4">
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={handleBold}
                   className="p-2 hover:bg-gray-100 rounded transition-colors"
                   title="Bold (Ctrl+B)"
@@ -504,6 +639,7 @@ const DocumentEditorPage = () => {
                   <Bold className="h-4 w-4" />
                 </button>
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={handleItalic}
                   className="p-2 hover:bg-gray-100 rounded transition-colors"
                   title="Italic (Ctrl+I)"
@@ -511,6 +647,7 @@ const DocumentEditorPage = () => {
                   <Italic className="h-4 w-4" />
                 </button>
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={handleUnderline}
                   className="p-2 hover:bg-gray-100 rounded transition-colors"
                   title="Underline (Ctrl+U)"
@@ -518,6 +655,7 @@ const DocumentEditorPage = () => {
                   <Underline className="h-4 w-4" />
                 </button>
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={handleHighlight}
                   className="p-2 hover:bg-gray-100 rounded transition-colors"
                   title="Highlight (Ctrl+H)"
@@ -530,7 +668,13 @@ const DocumentEditorPage = () => {
               <div className="flex items-center space-x-2 border-r border-gray-200 pr-4">
                 <select
                   value={fontSize}
-                  onChange={(e) => setFontSize(e.target.value)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onChange={(e) => {
+                    setFontSize(e.target.value);
+                    if (editorRef.current) {
+                      editorRef.current.style.fontSize = `${e.target.value}px`;
+                    }
+                  }}
                   className="text-sm border border-gray-300 rounded px-2 py-1"
                 >
                   <option value="12">12px</option>
@@ -542,7 +686,13 @@ const DocumentEditorPage = () => {
                 </select>
                 <select
                   value={fontFamily}
-                  onChange={(e) => setFontFamily(e.target.value)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onChange={(e) => {
+                    setFontFamily(e.target.value);
+                    if (editorRef.current) {
+                      editorRef.current.style.fontFamily = e.target.value;
+                    }
+                  }}
                   className="text-sm border border-gray-300 rounded px-2 py-1"
                 >
                   <option value="Inter">Inter</option>
@@ -563,13 +713,32 @@ const DocumentEditorPage = () => {
               >
                 <MessageSquare className="h-5 w-5" />
               </button>
+
+              {/* View button — only shown to the document owner */}
+              {noteDocument && String(noteDocument.user_id) === String(user?.id) && (
+                <button
+                  onClick={() => navigate(`/notes/view/${documentId}`)}
+                  className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-600"
+                  title="View document"
+                >
+                  <Eye className="h-5 w-5" />
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="p-2 hover:bg-indigo-100 text-indigo-600 rounded transition-colors"
+                title="Share to classroom room"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
               
               {/* OCR Reprocess Button - Show for images, videos, or failed extractions */}
-              {document && (
-                (document.file_name && (
-                  /\.(jpg|jpeg|png|bmp|tiff|tif|webp|gif|mp4|avi|mov|mkv|wmv|flv|webm|m4v)$/i.test(document.file_name) ||
-                  document.extraction_method?.includes('failed') ||
-                  document.content?.includes('extraction failed')
+              {noteDocument && (
+                (noteDocument.file_name && (
+                  /\.(jpg|jpeg|png|bmp|tiff|tif|webp|gif|mp4|avi|mov|mkv|wmv|flv|webm|m4v)$/i.test(noteDocument.file_name) ||
+                  noteDocument.extraction_method?.includes('failed') ||
+                  noteDocument.content?.includes('extraction failed')
                 )) && (
                   <button
                     onClick={() => reprocessOCRMutation.mutate()}
@@ -601,12 +770,8 @@ const DocumentEditorPage = () => {
               
               <button
                 onClick={handleSave}
-                disabled={!hasUnsavedChanges || updateDocumentMutation.isLoading}
-                className={`flex items-center space-x-2 px-3 py-2 rounded transition-colors ${
-                  hasUnsavedChanges 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
+                disabled={updateDocumentMutation.isLoading}
+                className="flex items-center space-x-2 px-3 py-2 rounded transition-colors bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
               >
                 {updateDocumentMutation.isLoading ? (
                   <Loader className="h-4 w-4 animate-spin" />
@@ -710,7 +875,7 @@ const DocumentEditorPage = () => {
                     <p className="text-sm text-blue-900">{chat.message}</p>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{chat.response}</p>
+                    <MarkdownRenderer content={chat.response} />
                   </div>
                 </div>
               ))
@@ -747,6 +912,15 @@ const DocumentEditorPage = () => {
             </form>
           </div>
         </motion.div>
+      )}
+
+      {/* Share to Room Modal */}
+      {showShareModal && (
+        <ShareNoteModal
+          documentId={documentId}
+          documentTitle={title}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );

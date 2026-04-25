@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
 from typing import List, Dict, Any, Optional
 from app.models import Message, MessageCreate, MessageUpdate, MessageInDB
 from app.auth import get_current_active_user, verify_token
@@ -9,12 +10,29 @@ from app.config import settings
 from bson import ObjectId
 from datetime import datetime
 from jose import JWTError, jwt
+from pathlib import Path
+from uuid import uuid4
+import aiofiles
+import os
 import json
 import logging
 from app.socketio_server import sio
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+# Ensure upload directory exists at module load time
+UPLOAD_BASE = Path("uploads/chat")
+UPLOAD_BASE.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_MIME_TYPES = {
+    "image/jpeg", "image/png", "image/gif", "image/webp",
+    "application/pdf", "text/plain",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "audio/webm", "audio/mp4", "audio/ogg", "audio/mpeg",
+}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 def is_classroom_member(classroom: dict, user_id: str) -> bool:
     """Type-safe membership check — members array may contain ObjectId or str."""
@@ -318,16 +336,22 @@ async def send_message(
     created_message = await db.messages.find_one({"_id": message_id})
     message_obj = Message(**created_message)
     
-    # Broadcast to Socket.IO room
-    message_dict = message_obj.dict()
-    message_dict['id'] = str(message_obj.id)
-    message_dict['_id'] = str(message_obj.id)
-    message_dict['room_id'] = str(message_obj.room_id)
-    message_dict['sender_id'] = str(message_obj.sender_id)
-    message_dict['timestamp'] = message_obj.timestamp.isoformat() if message_obj.timestamp else None
+    # Broadcast to Socket.IO room — include all file fields
+    broadcast_dict = message_obj.dict()
+    broadcast_dict['id'] = str(message_obj.id)
+    broadcast_dict['_id'] = str(message_obj.id)
+    broadcast_dict['room_id'] = str(message_obj.room_id)
+    broadcast_dict['sender_id'] = str(message_obj.sender_id)
+    broadcast_dict['timestamp'] = message_obj.timestamp.isoformat() if message_obj.timestamp else None
+    # Ensure file fields are included (they may be None for text messages)
+    broadcast_dict['message_type'] = message_obj.message_type
+    broadcast_dict['file_url'] = message_obj.file_url
+    broadcast_dict['file_name'] = message_obj.file_name
+    broadcast_dict['file_type'] = message_obj.file_type
+    broadcast_dict['file_size'] = message_obj.file_size
     
     await sio.emit('new_message', {
-        'message': message_dict,
+        'message': broadcast_dict,
         'sender_name': current_user.name,
         'sender_avatar': current_user.avatar
     }, room=str(room_id))
@@ -465,6 +489,75 @@ async def delete_message(
     
     return {"message": "Message deleted successfully"}
 
+
+@router.post("/rooms/{room_id}/upload")
+async def upload_chat_file(
+    room_id: str,
+    file: UploadFile = File(...),
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Upload a file for use in chat messages (images, PDFs, audio, docs — max 10MB)."""
+    try:
+        room_object_id = ObjectId(room_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid room ID")
+
+    # Verify room exists and user is a member
+    room = await db.rooms.find_one({"_id": room_object_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    classroom = await db.classrooms.find_one({"_id": room["classroom_id"]})
+    if not classroom or not is_classroom_member(classroom, current_user.id):
+        raise HTTPException(status_code=403, detail="Access denied to this room")
+
+    # Validate MIME type
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{file.content_type}' is not allowed. "
+                   f"Allowed types: images, PDF, TXT, DOC, DOCX, audio."
+        )
+
+    # Read and validate file size
+    file_bytes = await file.read()
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File exceeds 10MB limit")
+
+    # Save to uploads/chat/{room_id}/{uuid}_{original_name}
+    room_upload_dir = UPLOAD_BASE / room_id
+    room_upload_dir.mkdir(parents=True, exist_ok=True)
+
+    file_ext = Path(file.filename).suffix if file.filename else ""
+    stored_name = f"{uuid4().hex}{file_ext}"
+    file_path = room_upload_dir / stored_name
+
+    async with aiofiles.open(file_path, "wb") as f:
+        await f.write(file_bytes)
+
+    # Persist metadata in MongoDB
+    file_url = f"/uploads/chat/{room_id}/{stored_name}"
+    metadata = {
+        "room_id": room_id,
+        "original_name": file.filename,
+        "stored_name": stored_name,
+        "file_type": file.content_type,
+        "file_size": len(file_bytes),
+        "uploaded_by_id": str(current_user.id),
+        "uploaded_by_name": current_user.name,
+        "uploaded_at": datetime.utcnow(),
+        "url": file_url,
+    }
+    insert_result = await db.chat_files.insert_one(metadata)
+
+    return {
+        "file_id": str(insert_result.inserted_id),
+        "url": file_url,
+        "original_name": file.filename,
+        "file_type": file.content_type,
+        "file_size": len(file_bytes),
+    }
+
 @router.post("/rooms/{room_id}/summarize")
 async def summarize_room_chat(
     room_id: str,
@@ -525,4 +618,96 @@ async def summarize_room_chat(
 # The raw WebSocket endpoint was removed in favor of Socket.IO event handlers above.
 
 
+@sio.on('join_document')
+async def handle_join_document(sid, data):
+    """Join a document-scoped socket room for collaborative editing."""
+    try:
+        document_id = data.get('document_id') if isinstance(data, dict) else str(data)
+        session = await sio.get_session(sid)
+        if not session:
+            await sio.emit('error', {'error': 'Unauthorized'}, room=sid)
+            return
 
+        doc_room = f"doc_{document_id}"
+        await sio.enter_room(sid, doc_room)
+        logger.info(f"Client {sid} joined document room {doc_room}")
+        await sio.emit('document_joined', {'document_id': document_id}, room=sid)
+    except Exception as e:
+        logger.error(f"Error joining document room: {e}")
+        await sio.emit('error', {'error': str(e)}, room=sid)
+
+
+@sio.on('leave_document')
+async def handle_leave_document(sid, data):
+    """Leave a document-scoped socket room."""
+    try:
+        document_id = data.get('document_id') if isinstance(data, dict) else str(data)
+        doc_room = f"doc_{document_id}"
+        sio.leave_room(sid, doc_room)
+        logger.info(f"Client {sid} left document room {doc_room}")
+    except Exception as e:
+        logger.error(f"Error leaving document room: {e}")
+
+
+@sio.on('document_update')
+async def handle_document_update(sid, data):
+    """
+    Receive an HTML content update for a document (last-write-wins).
+    Persists the new HTML to MongoDB and broadcasts to all other clients in the document room.
+    """
+    try:
+        document_id = data.get('document_id')
+        html = data.get('html', '')
+
+        if not document_id:
+            await sio.emit('error', {'error': 'document_id required'}, room=sid)
+            return
+
+        session = await sio.get_session(sid)
+        if not session:
+            await sio.emit('error', {'error': 'Unauthorized'}, room=sid)
+            return
+
+        db = await get_database()
+
+        # Verify document exists
+        try:
+            doc = await db.documents.find_one({'_id': ObjectId(document_id)})
+        except Exception:
+            doc = None
+
+        if not doc:
+            await sio.emit('error', {'error': 'Document not found'}, room=sid)
+            return
+
+        # Last-write-wins: persist the incoming HTML immediately
+        await db.documents.update_one(
+            {'_id': ObjectId(document_id)},
+            {'$set': {'content': html, 'updated_at': datetime.utcnow()}}
+        )
+
+        # Update last_edited_by on the shared resource in any room that has it
+        editor_name = session.get('name', 'Someone')
+        try:
+            await db.rooms.update_one(
+                {"shared_resources.document_id": document_id},
+                {"$set": {
+                    "shared_resources.$.last_edited_by": editor_name,
+                    "shared_resources.$.last_edited_at": datetime.utcnow().isoformat()
+                }}
+            )
+        except Exception as meta_err:
+            logger.warning(f"Could not update shared resource metadata: {meta_err}")
+
+        # Broadcast to all other sockets in the document room (skip the sender)
+        doc_room = f"doc_{document_id}"
+        await sio.emit('document_update', {
+            'document_id': document_id,
+            'html': html,
+            'updated_by': editor_name
+        }, room=doc_room, skip_sid=sid)
+
+        logger.info(f"Document {document_id} updated by {session.get('name')}")
+    except Exception as e:
+        logger.error(f"Error handling document_update: {e}")
+        await sio.emit('error', {'error': str(e)}, room=sid)

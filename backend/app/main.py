@@ -123,6 +123,10 @@ import os
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Mount uploads directory for chat files (created on demand by chat.py)
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 # Mount Socket.IO ASGI app
 app.mount("/socket.io", asgi_app)
 

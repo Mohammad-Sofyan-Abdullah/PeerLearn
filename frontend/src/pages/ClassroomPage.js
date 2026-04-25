@@ -17,9 +17,11 @@ import {
   Hash,
   Copy,
   Check,
-  LogOut
+  LogOut,
+  BookOpen,
+  Download
 } from 'lucide-react';
-import { classroomsAPI } from '../utils/api';
+import { classroomsAPI, notesAPI } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -46,6 +48,7 @@ const ClassroomPage = () => {
   const [editingName, setEditingName] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
   const [availableFriends, setAvailableFriends] = useState([]);
+  const [showResources, setShowResources] = useState(false);
 
   // Fetch classroom details
   const { data: classroom, isLoading: classroomLoading } = useQuery(
@@ -66,6 +69,28 @@ const ClassroomPage = () => {
       enabled: !!id,
     }
   );
+
+  // Fetch shared resources for the selected room
+  const selectedRoomId = selectedRoom?.id || selectedRoom?._id;
+  const { data: roomResources = [], refetch: refetchResources } = useQuery(
+    ['roomResources', selectedRoomId],
+    () => classroomsAPI.getRoomResources(selectedRoomId),
+    {
+      select: (response) => response.data,
+      enabled: !!selectedRoomId,
+    }
+  );
+
+  // Real-time: invalidate resources when a new resource is shared into this room
+  const { onResourceShared } = useSocket();
+  useEffect(() => {
+    const unsub = onResourceShared?.((event) => {
+      if (event.room_id === selectedRoomId) {
+        queryClient.invalidateQueries(['roomResources', selectedRoomId]);
+      }
+    });
+    return () => { if (unsub) unsub(); };
+  }, [selectedRoomId, onResourceShared, queryClient]);
 
   // Delete room mutation
   const deleteRoomMutation = useMutation(
@@ -278,6 +303,15 @@ const ClassroomPage = () => {
       setCopiedCode(true);
       toast.success('Invite code copied to clipboard!');
       setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
+
+  const handleExportToNotes = async (documentId, title) => {
+    try {
+      await notesAPI.exportSharedDocument(documentId);
+      toast.success(`"${title}" saved to your notes`);
+    } catch (err) {
+      toast.error('Failed to save document to your notes');
     }
   };
 
@@ -529,14 +563,98 @@ const ClassroomPage = () => {
           </div>
         </div>
 
-        {/* Main content - Chat */}
-        <div className="flex-1 flex flex-col">
+        {/* Main content - Chat + Resources */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           {selectedRoom ? (
-            <ChatInterface
-              room={selectedRoom}
-              classroom={classroom}
-              user={user}
-            />
+            <div className="flex flex-col h-full overflow-hidden">
+              {/* Resources toggle bar */}
+              <div className="flex-none px-4 py-2 border-b border-gray-100 bg-white flex items-center justify-between">
+                <span className="text-xs text-gray-500 font-medium">
+                  #{selectedRoom.name === 'General' ? 'general' : selectedRoom.name}
+                </span>
+                <button
+                  onClick={() => setShowResources(!showResources)}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                    showResources
+                      ? 'bg-blue-50 border-blue-200 text-blue-700'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Resources{roomResources.length > 0 ? ` (${roomResources.length})` : ''}</span>
+                </button>
+              </div>
+
+              {/* Resources panel */}
+              {showResources && (
+                <div className="flex-none border-b border-gray-200 bg-gray-50 p-3 max-h-64 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-gray-700">Shared Notes</h3>
+                    <button
+                      onClick={() => setShowResources(false)}
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                  {roomResources.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">
+                      No notes shared in this channel yet
+                    </p>
+                  ) : (
+                    roomResources.map((resource) => (
+                      <div
+                        key={resource.document_id}
+                        className="bg-white rounded-lg border border-gray-200 p-3 mb-2 cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all"
+                        onClick={() => navigate(`/notes/editor/${resource.document_id}`)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
+                            {resource.content_preview && (
+                              <p className="text-xs text-gray-500 mt-0.5 truncate">{resource.content_preview}</p>
+                            )}
+                          </div>
+                          <BookOpen className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
+                        </div>
+                        <div className="flex items-center flex-wrap gap-x-3 mt-2">
+                          <span className="text-xs text-gray-400">
+                            Shared by{' '}
+                            <span className="font-medium text-gray-600">{resource.shared_by_name}</span>
+                          </span>
+                          {resource.last_edited_by && (
+                            <span className="text-xs text-gray-400">
+                              · Last edited by{' '}
+                              <span className="font-medium text-gray-600">{resource.last_edited_by}</span>
+                            </span>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExportToNotes(resource.document_id, resource.title);
+                            }}
+                            className="ml-auto flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            title="Save a personal copy to your Notes"
+                          >
+                            <Download className="h-3 w-3" />
+                            <span>Save to My Notes</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* Chat fills remaining height */}
+              <div className="flex-1 overflow-hidden">
+                <ChatInterface
+                  room={selectedRoom}
+                  classroom={classroom}
+                  user={user}
+                />
+              </div>
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">

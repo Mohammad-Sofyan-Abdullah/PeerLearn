@@ -313,7 +313,7 @@ const NotesPage = () => {
                     if (doc.session) {
                       navigate(`/notes/session/${doc.session.id || doc.session._id}`);
                     } else {
-                      navigate(`/notes/${doc.id || doc._id}`);
+                      navigate(`/notes/view/${doc.id || doc._id}`);
                     }
                   }}
                 >
@@ -328,6 +328,11 @@ const NotesPage = () => {
                         <h3 className="text-sm font-medium text-gray-900 truncate">
                           {doc.title}
                         </h3>
+                        {doc.source === 'classroom_share' && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 mt-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700">
+                            From classroom
+                          </span>
+                        )}
                         <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
                           <Calendar className="h-3 w-3" />
                           <span>{formatDate(doc.updated_at)}</span>

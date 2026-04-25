@@ -28,7 +28,8 @@ import {
     Brain,
     Plus,
     Trash2,
-    FileImage
+    FileImage,
+    Edit3
 } from 'lucide-react';
 import { notesAPI } from '../utils/api';
 import api from '../utils/api'; // Import default api for baseURL
@@ -36,6 +37,7 @@ import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ShareToFriendModal from '../components/ShareToFriendModal';
 import ConfirmModal from '../components/ConfirmModal';
+import MarkdownRenderer, { MarkdownRendererLight } from '../components/MarkdownRenderer';
 
 // Button import verified
 const DocumentSessionPage = () => {
@@ -237,21 +239,6 @@ const DocumentSessionPage = () => {
         toast.success('Copied to clipboard');
     };
 
-    // Helper to strip markdown formatting
-    const stripMarkdown = (text) => {
-        if (!text) return '';
-        return text
-            .replace(/\*\*(.+?)\*\*/g, '$1')  // Remove bold **text**
-            .replace(/\*(.+?)\*/g, '$1')      // Remove italic *text*
-            .replace(/__(.+?)__/g, '$1')      // Remove bold __text__
-            .replace(/_(.+?)_/g, '$1')        // Remove italic _text_
-            .replace(/#+\s+/g, '')            // Remove headings # 
-            .replace(/^[-*+]\s+/gm, '')       // Remove list markers
-            .replace(/^\d+\.\s+/gm, '')      // Remove numbered lists
-            .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Remove links [text](url)
-            .replace(/`(.+?)`/g, '$1')        // Remove inline code `code`
-            .replace(/^>\s+/gm, '');          // Remove blockquotes
-    };
 
     if (isLoading) {
         return (
@@ -307,6 +294,15 @@ const DocumentSessionPage = () => {
                             </div>
                         </div>
                         <div className="flex items-center space-x-3 flex-none">
+                            <StyledButton
+                                onClick={() => navigate(`/notes/editor/${session?.document_id}`)}
+                                variant="outline"
+                                className="bg-white"
+                                size="sm"
+                                leftIcon={<Edit3 className="h-4 w-4" />}
+                            >
+                                Edit Document
+                            </StyledButton>
                             <StyledButton
                                 onClick={() => handleShare('document_session')}
                                 variant="outline"
@@ -407,7 +403,11 @@ const DocumentSessionPage = () => {
                                                         : 'bg-gray-100 text-gray-900'
                                                         }`}
                                                 >
-                                                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                                                    {msg.role === 'user' ? (
+                                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                                    ) : (
+                                                        <MarkdownRenderer content={msg.content} />
+                                                    )}
                                                 </div>
                                             </div>
                                         ))
@@ -508,7 +508,7 @@ const DocumentSessionPage = () => {
                                                 </button>
                                             </div>
                                             <div className="p-4">
-                                                <p className="text-gray-700 whitespace-pre-wrap">{stripMarkdown(session.short_summary)}</p>
+                                                <MarkdownRenderer content={session.short_summary} />
                                             </div>
                                         </div>
 
@@ -541,7 +541,7 @@ const DocumentSessionPage = () => {
                                                 </div>
                                             </div>
                                             <div className="p-4">
-                                                <p className="text-gray-700 whitespace-pre-wrap">{stripMarkdown(session.detailed_summary)}</p>
+                                                <MarkdownRenderer content={session.detailed_summary} />
                                             </div>
                                         </div>
                                     </>
@@ -652,15 +652,14 @@ const DocumentSessionPage = () => {
                                                     style={{ backfaceVisibility: 'hidden' }}
                                                 >
                                                     <span className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-6 px-3 py-1 bg-white/10 rounded-full backdrop-blur-sm">Answer</span>
-                                                    <p className="text-xl md:text-2xl font-medium leading-relaxed">
-                                                        {session.flashcards[currentFlashcardIndex]?.answer}
-                                                    </p>
+                                                    <div className="text-xl md:text-2xl font-medium leading-relaxed text-left">
+                                                        <MarkdownRendererLight content={session.flashcards[currentFlashcardIndex]?.answer} />
+                                                    </div>
                                                     {session.flashcards[currentFlashcardIndex]?.explanation && (
                                                         <div className="mt-8 pt-6 border-t border-white/10 w-full">
-                                                            <p className="text-indigo-100 text-sm leading-relaxed">
-                                                                <span className="font-semibold text-white mr-2">Explanation:</span>
-                                                                {session.flashcards[currentFlashcardIndex]?.explanation}
-                                                            </p>
+                                                            <MarkdownRendererLight
+                                                                content={`**Explanation:** ${session.flashcards[currentFlashcardIndex]?.explanation}`}
+                                                            />
                                                         </div>
                                                     )}
                                                 </motion.div>

@@ -320,6 +320,174 @@ class ExportService:
             logger.error(f"Error exporting to PDF: {e}")
             raise
     
+    def export_document_to_pdf(self, document: dict) -> bytes:
+        """
+        Export a notes Document (with HTML content) to PDF bytes.
+        Parses the stored HTML and maps tags to ReportLab styles.
+        """
+        try:
+            from bs4 import BeautifulSoup
+            buffer = io.BytesIO()
+            doc_pdf = SimpleDocTemplate(
+                buffer,
+                pagesize=letter,
+                topMargin=1 * inch,
+                leftMargin=1 * inch,
+                rightMargin=1 * inch,
+                bottomMargin=1 * inch,
+            )
+
+            title_style = ParagraphStyle(
+                'DocTitle',
+                parent=self.styles['Heading1'],
+                fontSize=22,
+                spaceAfter=20,
+                textColor=HexColor('#2563eb'),
+                alignment=0,
+            )
+            h1_style = ParagraphStyle(
+                'DocH1',
+                parent=self.styles['Heading1'],
+                fontSize=18,
+                spaceBefore=16,
+                spaceAfter=10,
+                textColor=HexColor('#1f2937'),
+            )
+            h2_style = ParagraphStyle(
+                'DocH2',
+                parent=self.styles['Heading2'],
+                fontSize=15,
+                spaceBefore=14,
+                spaceAfter=8,
+                textColor=HexColor('#374151'),
+            )
+            h3_style = ParagraphStyle(
+                'DocH3',
+                parent=self.styles['Heading3'],
+                fontSize=13,
+                spaceBefore=12,
+                spaceAfter=6,
+                textColor=HexColor('#4b5563'),
+            )
+            body_style = ParagraphStyle(
+                'DocBody',
+                parent=self.styles['Normal'],
+                fontSize=11,
+                spaceAfter=8,
+                leading=16,
+                textColor=HexColor('#111827'),
+            )
+            meta_style = ParagraphStyle(
+                'DocMeta',
+                parent=self.styles['Normal'],
+                fontSize=9,
+                spaceAfter=20,
+                textColor=HexColor('#6b7280'),
+            )
+
+            content_parts = []
+
+            # Document title
+            doc_title = document.get('title', 'Untitled Document')
+            content_parts.append(Paragraph(doc_title, title_style))
+
+            # Meta line
+            updated = document.get('updated_at', '')
+            if updated:
+                try:
+                    if hasattr(updated, 'strftime'):
+                        updated_str = updated.strftime('%Y-%m-%d %H:%M')
+                    else:
+                        updated_str = str(updated)[:16]
+                except Exception:
+                    updated_str = str(updated)
+                content_parts.append(Paragraph(f"Last updated: {updated_str}", meta_style))
+
+            content_parts.append(Spacer(1, 12))
+
+            # Parse HTML content
+            raw_html = document.get('content', '') or ''
+            soup = BeautifulSoup(raw_html, 'html.parser')
+
+            def escape_xml(text):
+                """Escape special chars for ReportLab XML."""
+                return (text
+                        .replace('&', '&amp;')
+                        .replace('<', '&lt;')
+                        .replace('>', '&gt;')
+                        .replace('"', '&quot;'))
+
+            def node_to_rl_text(node):
+                """Recursively convert an HTML node to a ReportLab XML string."""
+                if isinstance(node, str):
+                    return escape_xml(node)
+                tag = node.name.lower() if node.name else ''
+                inner = ''.join(node_to_rl_text(c) for c in node.children)
+                if tag in ('b', 'strong'):
+                    return f'<b>{inner}</b>'
+                elif tag in ('i', 'em'):
+                    return f'<i>{inner}</i>'
+                elif tag == 'u':
+                    return f'<u>{inner}</u>'
+                elif tag in ('mark',):
+                    return inner  # ignore highlight colour in PDF
+                elif tag == 'br':
+                    return '<br/>'
+                elif tag == 'span':
+                    style_attr = node.get('style', '')
+                    if 'font-size' in style_attr:
+                        # best-effort inline font size
+                        import re
+                        m = re.search(r'font-size:\s*([\d.]+)px', style_attr)
+                        if m:
+                            size = max(8, int(float(m.group(1))))
+                            return f'<font size="{size}">{inner}</font>'
+                    return inner
+                else:
+                    return inner
+
+            for element in soup.children:
+                if isinstance(element, str):
+                    text = element.strip()
+                    if text:
+                        content_parts.append(Paragraph(escape_xml(text), body_style))
+                    continue
+
+                tag = element.name.lower() if element.name else ''
+
+                if tag == 'h1':
+                    content_parts.append(Paragraph(element.get_text(), h1_style))
+                elif tag == 'h2':
+                    content_parts.append(Paragraph(element.get_text(), h2_style))
+                elif tag in ('h3', 'h4', 'h5', 'h6'):
+                    content_parts.append(Paragraph(element.get_text(), h3_style))
+                elif tag in ('p', 'div'):
+                    inner_xml = ''.join(node_to_rl_text(c) for c in element.children)
+                    if inner_xml.strip():
+                        try:
+                            content_parts.append(Paragraph(inner_xml, body_style))
+                        except Exception:
+                            content_parts.append(Paragraph(escape_xml(element.get_text()), body_style))
+                elif tag in ('ul', 'ol'):
+                    for li in element.find_all('li', recursive=False):
+                        bullet_text = f'• {escape_xml(li.get_text())}'
+                        content_parts.append(Paragraph(bullet_text, body_style))
+                elif tag == 'br':
+                    content_parts.append(Spacer(1, 6))
+                else:
+                    # Generic fallback
+                    text = element.get_text().strip()
+                    if text:
+                        content_parts.append(Paragraph(escape_xml(text), body_style))
+
+            doc_pdf.build(content_parts)
+            buffer.seek(0)
+            return buffer.read()
+
+        except Exception as e:
+            logger.error(f"Error exporting document to PDF: {e}")
+            raise
+
     def _format_duration(self, seconds: int) -> str:
         """Format duration in seconds to readable format"""
         if seconds <= 0:

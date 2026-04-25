@@ -133,6 +133,49 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
+  // ── Collaborative document editing ─────────────────────────────────────────
+
+  const joinDocument = (documentId) => {
+    if (socket && documentId) {
+      socket.emit('join_document', { document_id: documentId });
+    }
+  };
+
+  const leaveDocument = (documentId) => {
+    if (socket && documentId) {
+      socket.emit('leave_document', { document_id: documentId });
+    }
+  };
+
+  const broadcastDocumentUpdate = (documentId, html) => {
+    if (socket && documentId) {
+      socket.emit('document_update', { document_id: documentId, html });
+    }
+  };
+
+  // Forward incoming remote document updates as a window CustomEvent
+  // so DocumentEditorPage can listen without needing socket context directly.
+  useEffect(() => {
+    if (!socket) return;
+    const handleRemoteUpdate = (data) => {
+      window.dispatchEvent(
+        new CustomEvent('remote_document_update', { detail: data })
+      );
+    };
+    socket.on('document_update', handleRemoteUpdate);
+    return () => socket.off('document_update', handleRemoteUpdate);
+  }, [socket]);
+
+  // ── Classroom resource sharing ──────────────────────────────────────────────
+
+  const onResourceShared = (callback) => {
+    if (socket) {
+      socket.on('resource_shared', callback);
+      return () => socket.off('resource_shared', callback);
+    }
+  };
+
+
   const onMessageEdited = (callback) => {
     if (socket) {
       socket.on('message_edited', callback);
@@ -173,6 +216,12 @@ export const SocketProvider = ({ children }) => {
     onMessageDeleted,
     onUserJoined,
     onUserLeft,
+    // Collaborative document editing
+    joinDocument,
+    leaveDocument,
+    broadcastDocumentUpdate,
+    // Resource sharing
+    onResourceShared,
   };
 
   return (

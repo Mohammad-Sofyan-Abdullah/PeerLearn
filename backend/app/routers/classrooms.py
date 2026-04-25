@@ -713,6 +713,109 @@ async def delete_room(
     
     return {"message": "Room deleted successfully"}
 
+# Room Resource Sharing
+@router.post("/rooms/{room_id}/resources")
+async def share_resource_to_room(
+    room_id: str,
+    body: dict,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Share a document into a room's shared_resources list"""
+    document_id = body.get("document_id")
+    if not document_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="document_id is required"
+        )
+
+    try:
+        room_object_id = ObjectId(room_id)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid room ID")
+
+    room = await db.rooms.find_one({"_id": room_object_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    classroom = await db.classrooms.find_one({"_id": room["classroom_id"]})
+    if not classroom or not is_classroom_member(classroom, current_user.id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Build full resource metadata object and push it
+    resource = {
+        "document_id": str(document_id),
+        "shared_by_id": str(current_user.id),
+        "shared_by_name": current_user.name,
+        "shared_at": datetime.utcnow().isoformat(),
+        "last_edited_by": None,
+        "last_edited_at": None,
+    }
+    await db.rooms.update_one(
+        {"_id": room_object_id},
+        {"$push": {"shared_resources": resource}}
+    )
+
+    # Broadcast socket event to anyone in this room
+    try:
+        from app.socketio_server import sio
+        await sio.emit("resource_shared", {
+            "room_id": str(room_id),
+            "document_id": str(document_id),
+            "shared_by": current_user.name
+        }, room=str(room_id))
+    except Exception as e:
+        logger.warning(f"Socket emit for resource_shared failed: {e}")
+
+    return {"message": "Resource shared successfully", "document_id": str(document_id)}
+
+
+@router.get("/rooms/{room_id}/resources")
+async def get_room_resources(
+    room_id: str,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Get full document objects for all shared resources in a room"""
+    try:
+        room_object_id = ObjectId(room_id)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid room ID")
+
+    room = await db.rooms.find_one({"_id": room_object_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    classroom = await db.classrooms.find_one({"_id": room["classroom_id"]})
+    if not classroom or not is_classroom_member(classroom, current_user.id):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    shared_resources = room.get("shared_resources", [])
+    result = []
+    for resource in shared_resources:
+        try:
+            doc = await db.documents.find_one({"_id": ObjectId(resource["document_id"])})
+            if doc:
+                content = doc.get("content", "") or ""
+                # Strip HTML tags for preview
+                import re as _re
+                plain = _re.sub(r"<[^>]+>", " ", content).strip()
+                preview = (plain[:150] + "...") if len(plain) > 150 else plain
+                result.append({
+                    "document_id": resource["document_id"],
+                    "title": doc.get("title", "Untitled"),
+                    "content_preview": preview,
+                    "shared_by_name": resource.get("shared_by_name", "Unknown"),
+                    "shared_at": resource.get("shared_at"),
+                    "last_edited_by": resource.get("last_edited_by"),
+                    "last_edited_at": resource.get("last_edited_at"),
+                })
+        except Exception:
+            continue
+
+    return result
+
+
 # AI Suggestions
 @router.get("/suggest-names")
 async def suggest_classroom_names(description: str):

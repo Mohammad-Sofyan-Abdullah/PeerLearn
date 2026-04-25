@@ -2,6 +2,7 @@
 Notes API Routes for Document Management and AI-Assisted Note Taking
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Body, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from datetime import datetime
 from app.models import (
@@ -13,6 +14,7 @@ from app.auth import get_current_active_user
 from app.database import get_database
 from app.ai_service import ai_service
 from app.ocr_service import ocr_service
+from app.export_service import export_service
 from bson import ObjectId
 import logging
 import os
@@ -27,6 +29,29 @@ router = APIRouter(prefix="/notes", tags=["notes"])
 # Upload directory for documents
 UPLOAD_DIR = "static/uploads/documents"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+async def user_has_document_access(db, document: dict, user_id: str) -> bool:
+    """
+    Single source of truth for document access.
+    Returns True if the user owns the document OR is a member of a classroom
+    that has the document in its shared_resources.
+    """
+    if str(document.get('user_id', '')) == user_id:
+        return True
+    doc_id_str = str(document['_id'])
+    shared_room = await db.rooms.find_one(
+        {'shared_resources.document_id': doc_id_str}
+    )
+    if not shared_room:
+        return False
+    classroom = await db.classrooms.find_one({'_id': shared_room['classroom_id']})
+    if not classroom:
+        return False
+    return (
+        str(classroom.get('admin_id', '')) == user_id
+        or any(str(m) == user_id for m in classroom.get('members', []))
+    )
 
 
 @router.get("/documents", response_model=List[Document])
@@ -165,13 +190,16 @@ async def get_document(
             detail="Invalid document ID format"
         )
     
-    document = await db.documents.find_one({
-        "_id": document_object_id,
-        "user_id": ObjectId(current_user.id)
-    })
+    document = await db.documents.find_one({'_id': document_object_id})
     
     if not document:
-        logger.warning(f"Document not found: {document_id} for user {current_user.id}")
+        logger.warning(f"Document not found: {document_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    if not await user_has_document_access(db, document, str(current_user.id)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
@@ -199,13 +227,15 @@ async def update_document(
             detail="Invalid document ID"
         )
     
-    # Check if document exists and belongs to user
-    existing_doc = await db.documents.find_one({
-        "_id": document_object_id,
-        "user_id": ObjectId(current_user.id)
-    })
+    existing_doc = await db.documents.find_one({'_id': document_object_id})
     
     if not existing_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    if not await user_has_document_access(db, existing_doc, str(current_user.id)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
@@ -431,20 +461,22 @@ async def chat_with_document(
             detail="Invalid document ID"
         )
     
-    # Get document
-    document = await db.documents.find_one({
-        "_id": document_object_id,
-        "user_id": ObjectId(current_user.id)
-    })
-    
+    # Get document — allow owner or shared classroom member
+    document = await db.documents.find_one({'_id': document_object_id})
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
+    if not await user_has_document_access(db, document, str(current_user.id)):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
     try:
-        # Get recent chat history
         chat_history = await db.document_chat_messages.find({
             "document_id": document_object_id
         }).sort("timestamp", -1).limit(10).to_list(length=None)
@@ -501,18 +533,21 @@ async def reprocess_document_with_ocr(
             detail="Invalid document ID"
         )
     
-    # Get document
-    document = await db.documents.find_one({
-        "_id": document_object_id,
-        "user_id": ObjectId(current_user.id)
-    })
-    
+    # Get document — allow owner or shared classroom member
+    document = await db.documents.find_one({'_id': document_object_id})
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
+    if not await user_has_document_access(db, document, str(current_user.id)):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
     file_path = document.get("file_url")
     if not file_path or not os.path.exists(file_path):
         raise HTTPException(
@@ -575,6 +610,54 @@ async def reprocess_document_with_ocr(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reprocess document: {str(e)}"
         )
+
+@router.get("/documents/{document_id}/export/pdf")
+async def export_document_pdf(
+    document_id: str,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Export a document as a formatted PDF download."""
+    try:
+        document_object_id = ObjectId(document_id)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid document ID"
+        )
+
+    document = await db.documents.find_one({'_id': document_object_id})
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    if not await user_has_document_access(db, document, str(current_user.id)):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    try:
+        pdf_bytes = export_service.export_document_to_pdf(document)
+    except Exception as e:
+        logger.error(f"PDF export failed for {document_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate PDF"
+        )
+
+    safe_title = document.get('title', 'document').replace('/', '-').replace('\\', '-')
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_title}.pdf"'
+        }
+    )
+
+@router.post("/documents/{document_id}/generate-notes")
 async def generate_notes(
     document_id: str,
     prompt: str = Body(..., embed=True),
@@ -590,18 +673,21 @@ async def generate_notes(
             detail="Invalid document ID"
         )
     
-    # Get document
-    document = await db.documents.find_one({
-        "_id": document_object_id,
-        "user_id": ObjectId(current_user.id)
-    })
-    
+    # Get document — allow owner or shared classroom member
+    document = await db.documents.find_one({'_id': document_object_id})
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
+    if not await user_has_document_access(db, document, str(current_user.id)):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
     try:
         # Generate notes using AI
         notes = await ai_service.generate_notes_from_document(
@@ -622,6 +708,47 @@ async def generate_notes(
             detail="Failed to generate notes"
         )
 
+@router.post("/documents/{document_id}/export-to-notes")
+async def export_shared_document_to_notes(
+    document_id: str,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Create a personal copy of a shared document in the user's own notes."""
+    try:
+        document_object_id = ObjectId(document_id)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid document ID"
+        )
+
+    original = await db.documents.find_one({'_id': document_object_id})
+    if not original:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not await user_has_document_access(db, original, str(current_user.id)):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Create a copy owned by the current user
+    new_doc = {
+        "title": f"{original.get('title', 'Untitled')} (from classroom)",
+        "content": original.get('content', ''),
+        "user_id": ObjectId(str(current_user.id)),
+        "source": "classroom_share",
+        "original_document_id": str(document_id),
+        "status": DocumentStatus.DRAFT,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    result = await db.documents.insert_one(new_doc)
+    new_doc["_id"] = result.inserted_id
+    new_doc["id"] = str(result.inserted_id)
+    logger.info(f"User {current_user.id} exported document {document_id} to their notes as {result.inserted_id}")
+    return Document(**new_doc)
+
+
+
 @router.get("/documents/{document_id}/chat-history")
 async def get_chat_history(
     document_id: str,
@@ -637,13 +764,16 @@ async def get_chat_history(
             detail="Invalid document ID"
         )
     
-    # Verify document ownership
-    document = await db.documents.find_one({
-        "_id": document_object_id,
-        "user_id": ObjectId(current_user.id)
-    })
+    # Verify access — allow owner or shared classroom member
+    document = await db.documents.find_one({'_id': document_object_id})
     
     if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    if not await user_has_document_access(db, document, str(current_user.id)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
@@ -685,13 +815,16 @@ async def create_document_session(
             detail="Invalid document ID"
         )
     
-    # Get the document
-    document = await db.documents.find_one({
-        "_id": document_object_id,
-        "user_id": ObjectId(current_user.id)
-    })
+    # Get the document — allow owner or any shared-access classroom member
+    document = await db.documents.find_one({'_id': document_object_id})
     
     if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    if not await user_has_document_access(db, document, str(current_user.id)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"

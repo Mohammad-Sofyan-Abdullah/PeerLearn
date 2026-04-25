@@ -205,17 +205,30 @@ export const classroomsAPI = {
   suggestRoomNames: (classroomName, subject) => api.get('/classrooms/suggest-room-names', { params: { classroomName, subject } }),
   addMember: (classroomId, userId) => api.post(`/classrooms/${classroomId}/add-member/${userId}`),
   getAvailableFriends: (classroomId) => api.get(`/classrooms/${classroomId}/available-friends`),
+
+  // Room resource sharing
+  shareResourceToRoom: (roomId, documentId) => api.post(`/classrooms/rooms/${roomId}/resources`, { document_id: documentId }),
+  getRoomResources: (roomId) => api.get(`/classrooms/rooms/${roomId}/resources`),
 };
 
 // Chat API
 export const chatAPI = {
   getMessages: (roomId, limit = 50, offset = 0) =>
     api.get(`/chat/rooms/${roomId}/messages`, { params: { limit, offset } }),
-  sendMessage: (roomId, content) => api.post(`/chat/rooms/${roomId}/messages`, { content, room_id: roomId }),
+  sendMessage: (roomId, messageData) =>
+    api.post(`/chat/rooms/${roomId}/messages`, { room_id: roomId, ...messageData }),
   editMessage: (messageId, content) => api.put(`/chat/messages/${messageId}`, { content }),
   deleteMessage: (messageId) => api.delete(`/chat/messages/${messageId}`),
   summarizeChat: (roomId) => api.post(`/chat/rooms/${roomId}/summarize`),
+  uploadFile: (roomId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/chat/rooms/${roomId}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
+
 
 // YouTube API
 export const youtubeAPI = {
@@ -330,6 +343,14 @@ export const notesAPI = {
 
   // Session import
   importSession: (sessionId) => api.post(`/notes/sessions/${sessionId}/import`),
+
+  // PDF Export
+  exportDocumentPdf: (documentId) =>
+    api.get(`/notes/documents/${documentId}/export/pdf`, { responseType: 'blob' }),
+
+  // Export a shared document to the user's own notes
+  exportSharedDocument: (documentId) =>
+    api.post(`/notes/documents/${documentId}/export-to-notes`),
 };
 
 // Teachers API

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -8,15 +8,40 @@ import {
   Trash2,
   FileText,
   Sparkles,
-  Loader2
+  Loader2,
+  Paperclip,
+  Mic,
+  Square,
+  Download,
+  X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { chatAPI } from '../utils/api';
 import { useSocket } from '../contexts/SocketContext';
-// import { useAuth } from '../contexts/AuthContext'; // Removed unused import
 import LoadingSpinner from './LoadingSpinner';
+import MarkdownRenderer from './MarkdownRenderer';
 import toast from 'react-hot-toast';
 import Button from './Button';
+
+const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const MAX_RECORDING_SECONDS = 300; // 5 minutes
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const formatDuration = (seconds) => {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+};
+
+// ─── Component ──────────────────────────────────────────────────────────────
 
 const ChatInterface = ({ room, classroom, user }) => {
   const [message, setMessage] = useState('');
@@ -28,23 +53,31 @@ const ChatInterface = ({ room, classroom, user }) => {
   const [summary, setSummary] = useState('');
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
+  // File upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
   const { socket, connected, joinRoom, leaveRoom } = useSocket();
 
-  // Fix 2: Join the socket room when this component mounts / room changes.
-  // The cleanup function leaves the room so broadcasts from the old room
-  // don't fire while the user is looking at a different room.
   const roomId = room.id || room._id;
+
   useEffect(() => {
     if (!roomId) return;
     joinRoom(roomId);
-    return () => {
-      leaveRoom();
-    };
+    return () => { leaveRoom(); };
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch messages
+  // ─── Queries & Mutations ────────────────────────────────────────────────
+
   const { data: initialMessages = [], isLoading } = useQuery(
     ['messages', roomId],
     () => chatAPI.getMessages(roomId),
@@ -54,14 +87,10 @@ const ChatInterface = ({ room, classroom, user }) => {
     }
   );
 
-  // Fix 4 (Part A): sendMessageMutation — remove the optimistic append from onSuccess.
-  // The socket 'new_message' event for OTHER users will handle their update.
-  // For the SENDER, we append the authoritative HTTP response here — single source of truth.
   const sendMessageMutation = useMutation(
-    ({ roomId: rId, content }) => chatAPI.sendMessage(rId, content),
+    (msgData) => chatAPI.sendMessage(roomId, msgData),
     {
       onSuccess: (response) => {
-        // Inject sender_name so the message renders correctly without a refetch
         const savedMessage = {
           ...response.data,
           sender_name: user?.name || 'Unknown',
@@ -70,19 +99,14 @@ const ChatInterface = ({ room, classroom, user }) => {
       },
       onError: (error) => {
         const errorMessage = error.response?.data?.detail;
-        if (typeof errorMessage === 'string') {
-          toast.error(errorMessage);
-        } else if (Array.isArray(errorMessage)) {
-          const messages = errorMessage.map(err => err.msg || JSON.stringify(err)).join(', ');
-          toast.error(messages);
-        } else {
-          toast.error('Failed to send message');
-        }
+        if (typeof errorMessage === 'string') toast.error(errorMessage);
+        else if (Array.isArray(errorMessage))
+          toast.error(errorMessage.map(e => e.msg || JSON.stringify(e)).join(', '));
+        else toast.error('Failed to send message');
       },
     }
   );
 
-  // Edit message mutation
   const editMessageMutation = useMutation(
     ({ messageId, content }) => chatAPI.editMessage(messageId, content),
     {
@@ -92,86 +116,54 @@ const ChatInterface = ({ room, classroom, user }) => {
         setEditContent('');
       },
       onError: (error) => {
-        const errorMessage = error.response?.data?.detail;
-        if (typeof errorMessage === 'string') {
-          toast.error(errorMessage);
-        } else if (Array.isArray(errorMessage)) {
-          const messages = errorMessage.map(err => err.msg || JSON.stringify(err)).join(', ');
-          toast.error(messages);
-        } else {
-          toast.error('Failed to edit message');
-        }
+        const detail = error.response?.data?.detail;
+        if (typeof detail === 'string') toast.error(detail);
+        else toast.error('Failed to edit message');
       },
     }
   );
 
-  // Delete message mutation
   const deleteMessageMutation = useMutation(chatAPI.deleteMessage, {
     onSuccess: () => {
       queryClient.invalidateQueries(['messages', roomId]);
       setShowMessageMenu(null);
     },
-    onError: (error) => {
-      const errorMessage = error.response?.data?.detail;
-      if (typeof errorMessage === 'string') {
-        toast.error(errorMessage);
-      } else if (Array.isArray(errorMessage)) {
-        const messages = errorMessage.map(err => err.msg || JSON.stringify(err)).join(', ');
-        toast.error(messages);
-      } else {
-        toast.error('Failed to delete message');
-      }
-    },
+    onError: () => toast.error('Failed to delete message'),
   });
 
-  // Summarize chat mutation
   const summarizeMutation = useMutation(
-    () => chatAPI.summarizeChat(room.id || room._id),
+    () => chatAPI.summarizeChat(roomId),
     {
       onSuccess: (response) => {
         setSummary(response.data.summary);
         setIsLoadingSummary(false);
       },
-      onError: (error) => {
-        const errorMessage = error.response?.data?.detail;
-        if (typeof errorMessage === 'string') {
-          toast.error(errorMessage);
-        } else if (Array.isArray(errorMessage)) {
-          const messages = errorMessage.map(err => err.msg || JSON.stringify(err)).join(', ');
-          toast.error(messages);
-        } else {
-          toast.error('Failed to generate summary');
-        }
+      onError: () => {
+        toast.error('Failed to generate summary');
         setIsLoadingSummary(false);
       },
     }
   );
 
-  // Update messages when initial data loads
+  // ─── Effects ─────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (initialMessages && initialMessages.length > 0) {
       setMessages(initialMessages);
     }
-  }, [JSON.stringify(initialMessages)]);
+  }, [JSON.stringify(initialMessages)]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Fix 4 (Part B): Socket event listeners.
-  // The new_message handler now SKIPS messages sent by the current user
-  // because the sender already appended the authoritative copy in sendMessageMutation.onSuccess.
-  // Without this guard the sender sees every message twice.
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (data) => {
-      // Normalise the socket payload so it matches the HTTP fetch shape
       const incomingMsg = normaliseSocketMessage(data);
       const senderId = String(incomingMsg.sender_id || '');
       const currentUserId = String(user?.id || user?._id || user?.user_id || '');
-      // Skip if the current user sent this — they already have it from onSuccess
       if (currentUserId && senderId === currentUserId) return;
       setMessages(prev => [...prev, incomingMsg]);
     };
@@ -203,16 +195,14 @@ const ChatInterface = ({ room, classroom, user }) => {
       socket.off('message_edited', handleMessageEdited);
       socket.off('message_deleted', handleMessageDeleted);
     };
-  }, [socket, user?.id, user?._id]);
+  }, [socket, user?.id, user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Handlers ────────────────────────────────────────────────────────────
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!message.trim() || !connected) return;
-
-    sendMessageMutation.mutate({
-      roomId,
-      content: message.trim(),
-    });
+    sendMessageMutation.mutate({ content: message.trim() });
     setMessage('');
   };
 
@@ -231,7 +221,7 @@ const ChatInterface = ({ room, classroom, user }) => {
   };
 
   const handleDeleteMessage = (messageId) => {
-    if (window.confirm('Are you sure you want to delete this message?')) {
+    if (window.confirm('Delete this message?')) {
       deleteMessageMutation.mutate(messageId);
     }
   };
@@ -242,54 +232,188 @@ const ChatInterface = ({ room, classroom, user }) => {
     summarizeMutation.mutate();
   };
 
-  const canEditMessage = (msg) => {
-    return msg.sender_id === user?.id && !msg.deleted;
-  };
+  // ─── File Upload ──────────────────────────────────────────────────────────
 
-  const canDeleteMessage = (msg) => {
-    return msg.sender_id === user?.id && !msg.deleted;
-  };
+  const handleFileUpload = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ''; // reset so same file can be re-selected
 
-  const safeText = (val) => {
-    if (val === null || val === undefined) return '';
-    const t = typeof val;
-    if (t === 'string' || t === 'number' || t === 'boolean') return String(val);
+    setIsUploading(true);
     try {
-      return JSON.stringify(val);
-    } catch (e) {
-      return String(val);
+      const response = await chatAPI.uploadFile(roomId, file);
+      const { url, original_name, file_type, file_size } = response.data;
+      sendMessageMutation.mutate({
+        content: original_name,
+        message_type: 'file',
+        file_url: url,
+        file_name: original_name,
+        file_type,
+        file_size,
+      });
+    } catch (err) {
+      // Error toast is handled by the api interceptor
+    } finally {
+      setIsUploading(false);
     }
-  };
+  }, [roomId, sendMessageMutation]);
 
-  /**
-   * Returns a reliable stable string ID for a message object.
-   * FastAPI serialises with _id (alias), so msg.id is often undefined.
-   * Always prefer _id, fall back to id.
-   */
-  const msgKey = (msg) => String(msg?._id || msg?.id || '');
+  // ─── Voice Recording ──────────────────────────────────────────────────────
 
-  /**
-   * Normalise a raw socket payload so it has exactly the same shape
-   * as a message returned by GET /rooms/{room_id}/messages.
-   * The socket handler in chat.py emits { message: {...}, sender_name, sender_avatar }.
-   * We pull sender_name/avatar into the message object so rendering logic can access it.
-   */
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const ext = mimeType === 'audio/webm' ? '.webm' : '.ogg';
+        const audioFile = new File([audioBlob], `voice_${Date.now()}${ext}`, { type: mimeType });
+        stream.getTracks().forEach(track => track.stop());
+        await handleVoiceUpload(audioFile, mimeType);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(t => {
+          if (t + 1 >= MAX_RECORDING_SECONDS) {
+            stopRecording();
+          }
+          return t + 1;
+        });
+      }, 1000);
+    } catch (err) {
+      toast.error('Microphone access denied');
+    }
+  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingTimerRef.current);
+    }
+  }, [isRecording]);
+
+  const handleVoiceUpload = useCallback(async (audioFile, mimeType) => {
+    try {
+      const durationSnapshot = recordingTime;
+      const response = await chatAPI.uploadFile(roomId, audioFile);
+      const { url, file_size } = response.data;
+      sendMessageMutation.mutate({
+        content: `Voice note (${formatDuration(durationSnapshot)})`,
+        message_type: 'voice',
+        file_url: url,
+        file_name: audioFile.name,
+        file_type: mimeType,
+        file_size,
+      });
+    } catch (err) {
+      toast.error('Failed to upload voice note');
+    }
+  }, [roomId, recordingTime, sendMessageMutation]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearInterval(recordingTimerRef.current);
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Utilities ────────────────────────────────────────────────────────────
+
   const normaliseSocketMessage = (payload) => {
     const msg = payload.message || payload;
     return {
       ...msg,
       sender_name: payload.sender_name || msg.sender_name || 'Unknown',
       sender_avatar: payload.sender_avatar || msg.sender_avatar || null,
+      message_type: msg.message_type || 'text',
+      file_url: msg.file_url || null,
+      file_name: msg.file_name || null,
+      file_type: msg.file_type || null,
+      file_size: msg.file_size || null,
     };
   };
 
-  // Helper to determine if a message belongs to the current user
   const isOwnMessage = (msg) => {
     const senderId = String(msg?.sender_id || '');
-    // Try all possible ID fields — /auth/me Pydantic serialisation may vary
     const userId = String(user?.id || user?._id || user?.user_id || '');
     return senderId === userId && userId !== '';
   };
+
+  const msgKey = (msg) => String(msg?._id || msg?.id || '');
+
+  // ─── Message Content Renderer ─────────────────────────────────────────────
+
+  const renderMessageContent = (msg, own) => {
+    const type = msg.message_type || 'text';
+
+    if (type === 'voice') {
+      return (
+        <div className={`flex items-center space-x-2 rounded-2xl p-2 mt-1 ${own ? 'bg-blue-500' : 'bg-gray-100'}`}>
+          <Mic className={`h-4 w-4 flex-shrink-0 ${own ? 'text-white' : 'text-blue-500'}`} />
+          <audio controls className="h-8 max-w-[180px]" style={{ filter: own ? 'invert(1)' : 'none' }}>
+            <source src={`${BACKEND_URL}${msg.file_url}`} type={msg.file_type || 'audio/webm'} />
+            Your browser does not support audio.
+          </audio>
+          <span className={`text-xs ${own ? 'text-blue-100' : 'text-gray-400'}`}>{msg.content}</span>
+        </div>
+      );
+    }
+
+    if (type === 'file') {
+      const isImage = msg.file_type?.startsWith('image/');
+      return (
+        <div className="mt-1">
+          {isImage ? (
+            <a href={`${BACKEND_URL}${msg.file_url}`} target="_blank" rel="noopener noreferrer">
+              <img
+                src={`${BACKEND_URL}${msg.file_url}`}
+                alt={msg.file_name}
+                className="max-w-full rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            </a>
+          ) : (
+            <div className="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg p-2 max-w-xs">
+              <FileText className="h-8 w-8 text-blue-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{msg.file_name}</p>
+                <p className="text-xs text-gray-400">{formatFileSize(msg.file_size)}</p>
+              </div>
+              <a
+                href={`${BACKEND_URL}${msg.file_url}`}
+                download={msg.file_name}
+                className="text-blue-600 hover:text-blue-800 flex-shrink-0"
+                title="Download"
+              >
+                <Download className="h-4 w-4" />
+              </a>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Default: text
+    return <p className="text-sm whitespace-pre-wrap">{msg.content}</p>;
+  };
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -301,6 +425,16 @@ const ChatInterface = ({ room, classroom, user }) => {
 
   return (
     <div className="flex-1 flex flex-col h-full">
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept="image/*,.pdf,.doc,.docx,.txt"
+        className="hidden"
+      />
+
       {/* Room header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
         <div>
@@ -329,27 +463,54 @@ const ChatInterface = ({ room, classroom, user }) => {
           <div className="text-center py-8">
             <FileText className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No messages yet</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Start the conversation by sending a message below
-            </p>
+            <p className="mt-1 text-sm text-gray-500">Start the conversation below</p>
           </div>
         ) : (
           messages.map((msg) => {
             const own = isOwnMessage(msg);
             return (
-              <div key={msg._id || msg.id} className={`flex w-full mb-2 ${own ? 'justify-end' : 'justify-start'}`}>
+              <div key={msgKey(msg)} className={`flex w-full mb-2 ${own ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-xs lg:max-w-md ${own ? 'items-end' : 'items-start'} flex flex-col`}>
                   {!own && (
                     <span className="text-xs text-gray-500 mb-1 ml-1">
                       {msg.sender_name || 'Unknown'}
                     </span>
                   )}
-                  <div className={`px-4 py-2 rounded-2xl ${own ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-900 rounded-bl-none'}`}>
-                    <p className="text-sm">{msg.content}</p>
-                  </div>
+
+                  {msg.deleted ? (
+                    <div className="px-4 py-2 rounded-2xl bg-gray-100 text-gray-400 italic text-sm">
+                      This message was deleted
+                    </div>
+                  ) : (
+                    <div className={`px-4 py-2 rounded-2xl ${own ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-900 rounded-bl-none'}`}>
+                      {renderMessageContent(msg, own)}
+                    </div>
+                  )}
+
                   <span className={`text-xs mt-1 text-gray-400 ${own ? 'text-right' : 'text-left'}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {msg.edited && <span className="ml-1 italic">(edited)</span>}
                   </span>
+
+                  {/* Message actions */}
+                  {!msg.deleted && own && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <button
+                        onClick={() => handleEditMessage(msg)}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                        title="Edit"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMessage(msg._id || msg.id)}
+                        className="text-xs text-gray-400 hover:text-red-500"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -358,20 +519,78 @@ const ChatInterface = ({ room, classroom, user }) => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Edit bar */}
+      {editingMessage && (
+        <div className="px-4 py-2 border-t border-yellow-200 bg-yellow-50 flex items-center space-x-2">
+          <input
+            type="text"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingMessage(null); }}
+            className="flex-1 text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none"
+            autoFocus
+          />
+          <button onClick={handleSaveEdit} className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+          <button onClick={() => setEditingMessage(null)} className="text-sm px-2 py-1 text-gray-500 hover:text-gray-700"><X className="h-4 w-4" /></button>
+        </div>
+      )}
+
       {/* Message input */}
       <div className="p-4 border-t border-gray-200 bg-white">
-        <form onSubmit={handleSendMessage} className="flex space-x-2">
+        <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+
+          {/* File upload button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading || isRecording}
+            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-40 transition-colors"
+            title="Attach file"
+          >
+            {isUploading
+              ? <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+              : <Paperclip className="h-5 w-5" />
+            }
+          </button>
+
+          {/* Voice note button / recording indicator */}
+          {isRecording ? (
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-full">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-sm text-red-600 font-medium tabular-nums">{formatDuration(recordingTime)}</span>
+              <button
+                type="button"
+                onClick={stopRecording}
+                className="text-red-600 hover:text-red-800"
+                title="Stop recording"
+              >
+                <Square className="h-4 w-4 fill-current" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onMouseDown={startRecording}
+              disabled={isUploading}
+              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-40 transition-colors"
+              title="Hold to record voice note"
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+          )}
+
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={connected ? "Type a message..." : "Connecting..."}
-            disabled={!connected}
+            placeholder={connected ? 'Type a message...' : 'Connecting...'}
+            disabled={!connected || isRecording}
             className="input flex-1"
           />
+
           <Button
             type="submit"
-            disabled={!message.trim() || !connected || sendMessageMutation.isLoading}
+            disabled={!message.trim() || !connected || sendMessageMutation.isLoading || isRecording}
             isLoading={sendMessageMutation.isLoading}
             size="md"
           >
@@ -410,7 +629,7 @@ const ChatInterface = ({ room, classroom, user }) => {
                       </div>
                     ) : (
                       <div className="prose prose-sm max-w-none">
-                        <p className="whitespace-pre-wrap">{summary}</p>
+                        <MarkdownRenderer content={summary} />
                       </div>
                     )}
                   </div>
@@ -425,5 +644,3 @@ const ChatInterface = ({ room, classroom, user }) => {
 };
 
 export default ChatInterface;
-
-

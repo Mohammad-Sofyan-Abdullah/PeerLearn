@@ -24,6 +24,7 @@ import YouTubeSummarizerLayout from './pages/YouTubeSummarizerLayout';
 import MarketplacePage from './pages/MarketplacePage';
 import NotesPage from './pages/NotesPage';
 import DocumentEditorPage from './pages/DocumentEditorPage';
+import DocumentViewPage from './pages/DocumentViewPage';
 import DocumentSessionPage from './pages/DocumentSessionPage';
 import TeacherRegisterPage from './pages/TeacherRegisterPage';
 import TeacherProfileSetupPage from './pages/TeacherProfileSetupPage';
@@ -109,7 +110,11 @@ function App() {
                   <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="notes" element={<NotesPage />} />
-                  <Route path="notes/:documentId" element={<DocumentEditorPage />} />
+                  {/* New view/editor routes */}
+                  <Route path="notes/view/:documentId" element={<DocumentViewPage />} />
+                  <Route path="notes/editor/:documentId" element={<DocumentEditorPage />} />
+                  {/* Legacy route — redirect to view */}
+                  <Route path="notes/:documentId" element={<DocumentViewPage />} />
                   <Route path="notes/session/:sessionId" element={<DocumentSessionPage />} />
                   <Route path="marketplace" element={<MarketplacePage />} />
                   <Route path="classroom/:id" element={<ClassroomPage />} />

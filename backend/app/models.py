@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from bson import ObjectId
@@ -186,6 +186,36 @@ class Classroom(ClassroomBase):
         json_encoders = {ObjectId: str}
 
 # Room Models
+class SharedResource(BaseModel):
+    document_id: str
+    shared_by_id: str = ''
+    shared_by_name: str = 'Unknown'
+    shared_at: datetime = Field(default_factory=datetime.utcnow)
+    last_edited_by: Optional[str] = None
+    last_edited_at: Optional[datetime] = None
+
+    @validator('document_id', pre=True, always=True)
+    def coerce_from_string(cls, v, values, **kwargs):
+        """Allows the whole model to be constructed from a bare string."""
+        return str(v) if v is not None else v
+
+    class Config:
+        # Accept both plain-string items and full dicts from old MongoDB documents
+        @classmethod
+        def schema_extra(cls, schema, model):
+            pass
+
+# Standalone coercion helper used by Room / RoomInDB validators
+def _coerce_shared_resource(v):
+    """Accept a bare document_id string OR a full SharedResource dict/object."""
+    if isinstance(v, SharedResource):
+        return v
+    if isinstance(v, str):
+        return SharedResource(document_id=v, shared_by_id='', shared_by_name='Unknown')
+    if isinstance(v, dict):
+        return SharedResource(**v)
+    return v
+
 class RoomBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -200,19 +230,30 @@ class RoomUpdate(BaseModel):
 class RoomInDB(RoomBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     classroom_id: PyObjectId
+    shared_resources: List[SharedResource] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @validator('shared_resources', pre=True, each_item=True, always=True)
+    def coerce_shared_resource(cls, v):
+        return _coerce_shared_resource(v)
 
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
+
 class Room(RoomBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     classroom_id: PyObjectId
+    shared_resources: List[SharedResource] = []  # list of resource metadata objects
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @validator('shared_resources', pre=True, each_item=True, always=True)
+    def coerce_shared_resource(cls, v):
+        return _coerce_shared_resource(v)
 
     class Config:
         allow_population_by_field_name = True
@@ -281,8 +322,13 @@ class YouTubeSession(YouTubeSessionBase):
 
 # Message Models
 class MessageBase(BaseModel):
-    content: str
+    content: str = ""
     room_id: Optional[PyObjectId] = None  # Optional: endpoint overrides from URL param
+    message_type: str = "text"  # "text", "file", "voice"
+    file_url: Optional[str] = None
+    file_name: Optional[str] = None
+    file_type: Optional[str] = None
+    file_size: Optional[int] = None
 
 class MessageCreate(MessageBase):
     pass

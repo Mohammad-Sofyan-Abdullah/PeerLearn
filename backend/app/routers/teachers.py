@@ -362,36 +362,27 @@ async def create_teacher_review(
                 detail="Teacher not found"
             )
         
-        # Check if student has had a session with this teacher (accepted or completed)
-        session = await db.hire_requests.find_one({
-            "teacher_id": teacher["user_id"],
+        # Check if student has this specific session (any non-cancelled status)
+        session = await db.teaching_sessions.find_one({
+            "_id": ObjectId(str(review_data.session_id)),
             "student_id": student_id_obj,
-            "status": {"$in": [HireRequestStatus.ACCEPTED, HireRequestStatus.COMPLETED]}
+            "status": {"$in": ["completed", "scheduled", "accepted"]},
         })
-        
         if not session:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only review teachers after your session request is accepted"
+                detail="Session not found or you are not the student for this session"
             )
-        
-        # Check if already reviewed (per session if session_id provided, else per teacher)
-        if review_data.session_id:
-            session_obj_id = ObjectId(str(review_data.session_id))
-            existing_review = await db.teacher_reviews.find_one({
-                "session_id": session_obj_id,
-                "student_id": student_id_obj
-            })
-        else:
-            existing_review = await db.teacher_reviews.find_one({
-                "teacher_id": teacher_obj_id,
-                "student_id": student_id_obj
-            })
-        
+
+        # Uniqueness: one review per session
+        existing_review = await db.teacher_reviews.find_one({
+            "session_id": ObjectId(str(review_data.session_id)),
+            "student_id": student_id_obj
+        })
         if existing_review:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You have already reviewed this teacher for this session"
+                detail="You have already reviewed this session"
             )
         
         # Create review
@@ -513,6 +504,7 @@ async def create_hire_request(
             "duration_hours": hire_data.duration_hours,
             "start_time": datetime.fromisoformat(hire_data.start_time.replace('Z', '+00:00')) if hire_data.start_time else None,
             "end_time": datetime.fromisoformat(hire_data.end_time.replace('Z', '+00:00')) if hire_data.end_time else None,
+            "timezone": hire_data.timezone,
             "total_price": total_price,
             "status": HireRequestStatus.PENDING,
             "payment_status": "pending",
@@ -554,16 +546,19 @@ async def get_sent_hire_requests(
             teacher_user = await db.users.find_one({"_id": req["teacher_id"]})
             teacher_profile = await db.teacher_profiles.find_one({"user_id": req["teacher_id"]})
             
-            # Check if student has reviewed this teacher
+            # Check if student has reviewed THIS specific session (not just this teacher)
             has_review = False
-            if teacher_profile:
+            session_doc = await db.teaching_sessions.find_one({"hire_request_id": req["_id"]})
+            session_id_for_review = str(session_doc["_id"]) if session_doc else None
+            if session_doc:
                 has_review = await db.teacher_reviews.find_one({
-                    "teacher_id": teacher_profile["_id"],
+                    "session_id": session_doc["_id"],
                     "student_id": student_id_obj
                 }) is not None
             
             result.append({
                 "id": str(req["_id"]),
+                "session_id": session_id_for_review,   # teaching_session _id for review submission
                 "teacher": {
                     "id": str(teacher_profile["_id"]) if teacher_profile else None,
                     "name": teacher_profile.get("full_name") if teacher_profile else teacher_user.get("name"),
@@ -689,19 +684,27 @@ async def update_hire_request(
             
             # If accepted, create a teaching session
             if update_dict.get("status") == HireRequestStatus.ACCEPTED:
-                session_dict = {
-                    "hire_request_id": request_obj_id,
-                    "teacher_id": hire_request["teacher_id"],
-                    "student_id": hire_request["student_id"],
-                    "subject": hire_request["subject"],
-                    "scheduled_time": update_data.proposed_schedule.get("start_time") if update_data.proposed_schedule else None,
-                    "duration_minutes": (hire_request.get("duration_hours", 1) * 60),
-                    "status": "scheduled",
-                    "created_at": datetime.utcnow(),
-                    "updated_at": datetime.utcnow()
-                }
-                await db.teaching_sessions.insert_one(session_dict)
-                
+                # Guard: skip if request was already accepted (prevents double-processing)
+                if hire_request.get("status") == HireRequestStatus.ACCEPTED:
+                    return {"message": "Hire request already accepted"}
+
+                # Upsert session — safe against duplicate endpoint calls
+                await db.teaching_sessions.update_one(
+                    {"hire_request_id": request_obj_id},
+                    {"$setOnInsert": {
+                        "hire_request_id": request_obj_id,
+                        "teacher_id": hire_request["teacher_id"],
+                        "student_id": hire_request["student_id"],
+                        "subject": hire_request["subject"],
+                        "scheduled_time": hire_request.get("start_time"),
+                        "duration_minutes": (hire_request.get("duration_hours", 1) * 60),
+                        "status": "scheduled",
+                        "created_at": datetime.utcnow(),
+                        "updated_at": datetime.utcnow(),
+                    }},
+                    upsert=True
+                )
+
                 # Update teacher stats
                 teacher_profile = await db.teacher_profiles.find_one({"user_id": hire_request["teacher_id"]})
                 if teacher_profile:
@@ -712,6 +715,145 @@ async def update_hire_request(
                             "$set": {"updated_at": datetime.utcnow()}
                         }
                     )
+
+            # ── Post-acceptance: auto-DM + Google Calendar Meet link ─────────
+            if update_dict.get("status") == HireRequestStatus.ACCEPTED:
+                try:
+                    teacher_user = await db.users.find_one({"_id": hire_request["teacher_id"]})
+                    student_user = await db.users.find_one({"_id": hire_request["student_id"]})
+
+                    teacher_name = teacher_user.get("name", "Teacher") if teacher_user else "Teacher"
+                    student_name = student_user.get("name", "Student") if student_user else "Student"
+                    subj = hire_request.get("subject", "your subject")
+                    start_time = hire_request.get("start_time")
+                    end_time   = hire_request.get("end_time")
+                    tz         = hire_request.get("timezone", "UTC")
+                    dur        = hire_request.get("duration_hours", 1)
+
+                    # ── Step 1: try Google Calendar ──────────────────────────
+                    meet_link  = None
+                    event_link = None
+                    calendar_connected = student_user.get("google_calendar_connected", False) if student_user else False
+
+                    if start_time and calendar_connected:
+                        try:
+                            from app.google_calendar_service import create_calendar_event_with_meet
+                            st = start_time if isinstance(start_time, datetime) else datetime.fromisoformat(str(start_time))
+                            et = end_time   if isinstance(end_time,   datetime) else datetime.fromisoformat(str(end_time)) if end_time else None
+                            if et is None:
+                                from datetime import timedelta
+                                et = st + timedelta(hours=int(dur))
+                            cal_result = await create_calendar_event_with_meet(
+                                db=db,
+                                student_id=str(hire_request["student_id"]),
+                                teacher_name=teacher_name,
+                                student_name=student_name,
+                                subject=subj,
+                                start_time=st,
+                                end_time=et,
+                                timezone=tz,
+                            )
+                            meet_link  = cal_result.get("meet_link")
+                            event_link = cal_result.get("event_link")
+                            logger.info(f"Google Meet created: {meet_link}")
+                        except Exception as cal_err:
+                            logger.warning(f"Google Calendar event creation failed (non-fatal): {cal_err}")
+
+                    # ── Step 2: build DM content ─────────────────────────────
+                    time_str = "As scheduled"
+                    if start_time:
+                        try:
+                            st_dt = start_time if isinstance(start_time, datetime) else datetime.fromisoformat(str(start_time))
+                            time_str = st_dt.strftime("%B %d, %Y")
+                        except Exception:
+                            pass
+
+                    if meet_link:
+                        dm_content = (
+                            f"✅ Your session request for '{subj}' has been approved!\n\n"
+                            f"📅 Session Details\n"
+                            f"Subject: {subj}\n"
+                            f"Teacher: {teacher_name}\n"
+                            f"Time: {time_str}\n"
+                            f"Duration: {dur} hour(s)\n\n"
+                            f"🎥 Google Meet Link\n"
+                            f"{meet_link}\n\n"
+                            f"📎 Calendar Event\n"
+                            f"{event_link}\n\n"
+                            f"See you in the session! 🎓"
+                        )
+                    else:
+                        connect_note = (
+                            "Connect your Google Calendar in Profile > Connected Accounts to get automatic Meet links next time."
+                            if not calendar_connected else
+                            "The Meet link could not be created automatically. The teacher will share one shortly."
+                        )
+                        dm_content = (
+                            f"✅ Your session request for '{subj}' has been approved!\n\n"
+                            f"📅 Session Details\n"
+                            f"Subject: {subj}\n"
+                            f"Teacher: {teacher_name}\n"
+                            f"Time: {time_str}\n"
+                            f"Duration: {dur} hour(s)\n\n"
+                            f"The teacher will share a meeting link with you shortly.\n\n"
+                            f"{connect_note}"
+                        )
+
+                    # ── Step 3: find or create conversation ──────────────────
+                    teacher_id_str = str(hire_request["teacher_id"])
+                    student_id_str = str(hire_request["student_id"])
+
+                    existing_conv = await db.conversations.find_one(
+                        {"participants": {"$all": [teacher_id_str, student_id_str]}}
+                    )
+                    if existing_conv:
+                        conv_id = str(existing_conv["_id"])
+                    else:
+                        cr = await db.conversations.insert_one({
+                            "participants": [teacher_id_str, student_id_str],
+                            "created_at": datetime.utcnow(),
+                            "updated_at": datetime.utcnow(),
+                            "last_message_content": None,
+                            "last_message_timestamp": None,
+                        })
+                        conv_id = str(cr.inserted_id)
+
+                    # ── Step 4: insert DM (deduped by hire_request_id) ────────
+                    now = datetime.utcnow()
+                    existing_msg = await db.direct_messages.find_one({
+                        "conversation_id": conv_id,
+                        "hire_request_id": str(request_id),
+                    })
+                    if not existing_msg:
+                        await db.direct_messages.insert_one({
+                            "conversation_id":  conv_id,
+                            "sender_id":        teacher_id_str,
+                            "receiver_id":      student_id_str,
+                            "content":          dm_content,
+                            "message_type":     "text",
+                            "timestamp":        now,
+                            "is_read":          False,
+                            "is_ai_response":   False,
+                            "is_edited":        False,
+                            "file_url":         None,
+                            "file_name":        None,
+                            "file_size":        None,
+                            "replied_to":       None,
+                            "hire_request_id":  str(request_id),  # dedup key
+                        })
+
+                    # ── Step 5: update conversation preview ──────────────────
+                    await db.conversations.update_one(
+                        {"_id": ObjectId(conv_id)},
+                        {"$set": {
+                            "last_message_content":   dm_content[:100],
+                            "last_message_timestamp": now,
+                            "updated_at":             now,
+                        }},
+                    )
+                    logger.info(f"Approval DM sent for hire request {request_id}")
+                except Exception as dm_err:
+                    logger.error(f"Failed to send approval DM (non-fatal): {dm_err}")
         
         return {"message": "Hire request updated successfully"}
         

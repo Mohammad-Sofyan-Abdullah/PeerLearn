@@ -6,6 +6,31 @@ import { teachersAPI } from '../utils/api';
 import ReviewTeacherModal from '../components/ReviewTeacherModal';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const TIMEZONE = 'Asia/Karachi';
+
+const formatPKT = (dateString) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleString('en-PK', {
+    timeZone: TIMEZONE,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
+const formatTimePKT = (dateString) => {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleTimeString('en-PK', {
+    timeZone: TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 const StudentSessionsPage = () => {
   const [filter, setFilter] = useState('all'); // all, upcoming, completed, cancelled
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -44,7 +69,8 @@ const StudentSessionsPage = () => {
 
   const handleReviewClick = (session) => {
     setSelectedTeacher(session.teacher);
-    setSelectedSession(session);
+    // Attach session_id to the session object so ReviewTeacherModal can include it in the payload
+    setSelectedSession({ ...session, _id: session.session_id });
     setReviewModalOpen(true);
   };
 
@@ -109,8 +135,8 @@ const StudentSessionsPage = () => {
   };
 
   const canReview = (session) => {
-    // Student can review anytime if session is accepted or completed, and not already reviewed
-    return (session.status === 'accepted' || session.status === 'completed') && !session.has_review;
+    // Student can review only after session is completed, has a session_id, and hasn't reviewed yet
+    return session.status === 'completed' && !!session.session_id && !session.has_review;
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -268,17 +294,9 @@ const StudentSessionsPage = () => {
                         {session.start_time && (
                           <div className="flex items-center gap-2 text-gray-600">
                             <Clock className="h-4 w-4" />
-                            <span className="text-sm">
-                              {new Date(session.start_time).toLocaleString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                              {session.end_time && ` - ${new Date(session.end_time).toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}`}
+                          <span className="text-sm">
+                              {formatPKT(session.start_time)}
+                              {session.end_time && ` – ${formatTimePKT(session.end_time)}`}
                             </span>
                           </div>
                         )}

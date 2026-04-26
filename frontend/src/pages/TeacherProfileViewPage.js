@@ -16,8 +16,7 @@ export default function TeacherProfileViewPage() {
     subject: '',
     description: '',
     duration_hours: 1,
-    start_time: '',
-    end_time: ''
+    start_time: ''
   });
 
   useEffect(() => {
@@ -40,15 +39,21 @@ export default function TeacherProfileViewPage() {
     e.preventDefault();
     try {
       // Convert datetime-local to ISO format
-      const startTimeISO = hireData.start_time ? new Date(hireData.start_time).toISOString() : null;
-      const endTimeISO = hireData.end_time ? new Date(hireData.end_time).toISOString() : null;
+      const startDate = new Date(hireData.start_time);
+      const startTimeISO = startDate.toISOString();
+      // Auto-calculate end time from start + duration
+      const endDate = new Date(startDate.getTime() + (parseInt(hireData.duration_hours) || 1) * 60 * 60 * 1000);
+      const endTimeISO = endDate.toISOString();
+      // Capture browser timezone (IANA string, e.g. "Asia/Karachi")
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
       await api.post('/teachers/hire', {
         teacher_id: teacherId,
         ...hireData,
         duration_hours: parseInt(hireData.duration_hours),
         start_time: startTimeISO,
-        end_time: endTimeISO
+        end_time: endTimeISO,
+        timezone: timezone
       });
       
       alert('Hire request sent successfully!');
@@ -434,18 +439,6 @@ export default function TeacherProfileViewPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Session End Time
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={hireData.end_time}
-                  onChange={(e) => setHireData({ ...hireData, end_time: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3"
-                />
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

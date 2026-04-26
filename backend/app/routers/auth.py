@@ -273,6 +273,8 @@ async def get_current_user_info(current_user: UserInDB = Depends(get_current_act
     user_dict = current_user.dict()
     # current_user.id is already a string (auth.py line 88 converts ObjectId → str before UserInDB(**user))
     user_dict["id"] = str(current_user.id) if current_user.id else None
+    # Ensure google_calendar_connected is always present
+    user_dict.setdefault("google_calendar_connected", False)
     return user_dict
 
 @router.put("/me", response_model=User)
@@ -401,3 +403,138 @@ async def get_user_by_id(
             detail="Failed to get user information"
         )
 
+# ── Google Calendar OAuth ─────────────────────────────────────────────────────
+import os as _os
+from bson import ObjectId as _ObjectId
+from fastapi.responses import RedirectResponse as _RedirectResponse
+
+
+def _make_flow(state: str = None):
+    """Build a google_auth_oauthlib Flow object.
+
+    Reads credentials at call time (not import time) so python-dotenv has
+    already populated os.environ before we access any values.
+    """
+    from google_auth_oauthlib.flow import Flow
+    from dotenv import load_dotenv
+    import os
+
+    # Force-reload .env so values are guaranteed to be present
+    load_dotenv(override=True)
+
+    client_id     = os.getenv("GOOGLE_CLIENT_ID", "")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    backend_url   = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+    # Diagnostic — visible in uvicorn terminal
+    logger.info(f"[_make_flow] client_id present: {bool(client_id)} | len={len(client_id)}")
+    logger.info(f"[_make_flow] client_secret present: {bool(client_secret)} | len={len(client_secret)}")
+    logger.info(f"[_make_flow] backend_url: {backend_url}")
+    logger.info(f"[_make_flow] state: {state}")
+
+    if not client_id or not client_secret:
+        raise HTTPException(
+            status_code=500,
+            detail="Google OAuth credentials not configured on server",
+        )
+
+    redirect_uri = f"{backend_url}/auth/google/calendar/callback"
+
+    client_config = {
+        "web": {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [redirect_uri],
+        }
+    }
+
+    flow = Flow.from_client_config(
+        client_config,
+        scopes=[
+            "https://www.googleapis.com/auth/calendar.events",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "openid",
+        ],
+        state=state,
+    )
+    flow.redirect_uri = redirect_uri
+    return flow
+
+
+@router.get("/google/calendar/connect")
+async def connect_google_calendar(
+    current_user: UserInDB = Depends(get_current_active_user),
+):
+    """Return the Google OAuth URL so the frontend can redirect the browser."""
+    logger.info(f"[connect_google_calendar] called by user_id={current_user.id}")
+    try:
+        flow = _make_flow()
+        logger.info("[connect_google_calendar] _make_flow() succeeded")
+        auth_url, _ = flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+            prompt="consent",
+            state=str(current_user.id),
+        )
+        logger.info(f"[connect_google_calendar] auth_url generated: {auth_url[:80]}...")
+        return {"auth_url": auth_url}
+    except HTTPException:
+        raise   # let FastAPI handle 500s we already raised in _make_flow
+    except Exception as exc:
+        logger.error(f"[connect_google_calendar] UNEXPECTED ERROR: {type(exc).__name__}: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Google OAuth setup failed: {type(exc).__name__}: {exc}")
+
+
+@router.get("/google/calendar/callback")
+async def google_calendar_callback(
+    code: str,
+    state: str,          # user_id we embedded in the state param
+    db=Depends(get_database),
+):
+    """Exchange auth code for tokens and persist them on the user document."""
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    try:
+        flow = _make_flow(state=state)
+        flow.fetch_token(code=code)
+        creds = flow.credentials
+
+        await db.users.update_one(
+            {"_id": _ObjectId(state)},
+            {
+                "$set": {
+                    "google_access_token": creds.token,
+                    "google_refresh_token": creds.refresh_token,
+                    "google_token_expiry": creds.expiry,
+                    "google_calendar_connected": True,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+        )
+        return _RedirectResponse(url=f"{frontend_url}/profile?google_connected=true")
+    except Exception as e:
+        logger.error(f"Google calendar callback error: {e}")
+        return _RedirectResponse(url=f"{frontend_url}/profile?google_connected=false&error=callback_failed")
+
+
+@router.delete("/google/calendar/disconnect")
+async def disconnect_google_calendar(
+    current_user: UserInDB = Depends(get_current_active_user),
+    db=Depends(get_database),
+):
+    """Remove stored Google tokens from the user document."""
+    await db.users.update_one(
+        {"_id": _ObjectId(str(current_user.id))},
+        {
+            "$set": {
+                "google_access_token": None,
+                "google_refresh_token": None,
+                "google_token_expiry": None,
+                "google_calendar_connected": False,
+                "updated_at": datetime.utcnow(),
+            }
+        },
+    )
+    return {"message": "Google Calendar disconnected"}

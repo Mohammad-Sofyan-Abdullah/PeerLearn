@@ -32,6 +32,18 @@ import toast from 'react-hot-toast';
 import Button from '../components/Button';
 import '../index.css';
 
+const TIMEZONE = 'Asia/Karachi';
+
+const formatTimePKT = (dateString) => {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleTimeString('en-PK', {
+    timeZone: TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 const MessagesPage = () => {
   const { friendId } = useParams();
   const navigate = useNavigate();
@@ -301,14 +313,12 @@ const MessagesPage = () => {
 
   const formatTime = (timestamp) => {
     try {
-      // handle various timestamp shapes (string, number, or object from backend)
       if (!timestamp) return '';
-      if (typeof timestamp === 'object') {
-        // try common mongo date wrapper
-        const maybe = timestamp.$date || timestamp.date || timestamp;
-        return new Date(maybe).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      }
-      return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      // handle various timestamp shapes from backend
+      const raw = typeof timestamp === 'object'
+        ? (timestamp.$date || timestamp.date || timestamp)
+        : timestamp;
+      return formatTimePKT(raw);
     } catch (e) {
       return '';
     }
@@ -627,9 +637,33 @@ const MessagesPage = () => {
           )}
 
           {/* Message Text */}
-          {msg.content && (
-            <p className="text-sm whitespace-pre-wrap break-words">{safeText(msg.content)}</p>
-          )}
+          {msg.content && (() => {
+            const renderMessageContent = (content) => {
+              if (!content) return null;
+              const urlRegex = /(https?:\/\/[^\s]+)/g;
+              const parts = String(content).split(urlRegex);
+              return parts.map((part, i) =>
+                urlRegex.test(part) ? (
+                  <a
+                    key={i}
+                    href={part}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`underline break-all ${isOwnMessage ? 'text-blue-100 hover:text-white' : 'text-blue-600 hover:text-blue-800'}`}
+                  >
+                    {part}
+                  </a>
+                ) : (
+                  <span key={i}>{part}</span>
+                )
+              );
+            };
+            return (
+              <p className="text-sm whitespace-pre-wrap break-words">
+                {renderMessageContent(safeText(msg.content))}
+              </p>
+            );
+          })()}
 
           {/* Message Info */}
           <div className={`flex items-center justify-between mt-1 text-xs ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'

@@ -64,6 +64,11 @@ class UserBase(BaseModel):
     learning_streaks: int = 0
     student_id: Optional[str] = None
     role: UserRole = UserRole.STUDENT
+    # Google Calendar OAuth
+    google_access_token: Optional[str] = None
+    google_refresh_token: Optional[str] = None
+    google_token_expiry: Optional[datetime] = None
+    google_calendar_connected: bool = False
 
 class UserCreate(UserBase):
     password: str
@@ -804,7 +809,7 @@ class TeacherReview(BaseModel):
 class TeacherReviewCreate(BaseModel):
     rating: int
     comment: Optional[str] = None
-    session_id: Optional[str] = None  # hire_request _id; if provided, one review per session
+    session_id: str
 
 # Hiring/Session Models
 class HireRequestStatus(str, Enum):
@@ -830,6 +835,7 @@ class HireRequest(BaseModel):
     duration_hours: Optional[int] = None
     start_time: Optional[datetime] = None  # When session starts
     end_time: Optional[datetime] = None    # When session ends
+    timezone: str = "UTC"                  # IANA timezone
     total_price: float
     status: HireRequestStatus = HireRequestStatus.PENDING
     payment_status: str = "pending"  # pending, completed, refunded
@@ -851,6 +857,7 @@ class HireRequestCreate(BaseModel):
     duration_hours: Optional[int] = None
     start_time: Optional[str] = None  # ISO format datetime string
     end_time: Optional[str] = None    # ISO format datetime string
+    timezone: str = "UTC"             # IANA timezone e.g. "Asia/Karachi"
 
 class HireRequestUpdate(BaseModel):
     status: Optional[HireRequestStatus] = None

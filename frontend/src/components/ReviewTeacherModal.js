@@ -40,7 +40,8 @@ const ReviewTeacherModal = ({ isOpen, onClose, teacher, session }) => {
 
     reviewMutation.mutate({
       rating,
-      comment: comment.trim()
+      comment: comment.trim(),
+      session_id: session?._id || session?.id  // required by backend — one review per session
     });
   };
 

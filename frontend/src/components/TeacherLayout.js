@@ -12,7 +12,8 @@ import {
   BookOpen,
   DollarSign,
   Star,
-  Calendar
+  Calendar,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
@@ -34,6 +35,7 @@ const TeacherLayout = () => {
     { name: 'My Profile', href: '/teacher/profile/edit', icon: User },
     { name: 'Messages', href: '/teacher/messages', icon: MessageSquare },
     { name: 'Sessions', href: '/teacher/sessions', icon: Calendar },
+    { name: 'Marketplace', href: '/teacher/marketplace', icon: ShoppingBag },
     { name: 'Earnings', href: '/teacher/earnings', icon: DollarSign },
     { name: 'Reviews', href: '/teacher/reviews', icon: Star },
   ];

@@ -118,7 +118,31 @@ async def verify_email(verification_data: EmailVerificationRequest, db = Depends
     
     result = await db.users.insert_one(user_dict)
     user_id = result.inserted_id
-    
+
+    # If registering as teacher, immediately create a minimal profile
+    # Status is "profile_incomplete" so they can fill in their profile before admin review
+    if user_data.role == "teacher":
+        await db.teacher_profiles.insert_one({
+            "user_id": user_id,
+            "status": "profile_incomplete",
+            "full_name": user_data.name,
+            "short_bio": "",
+            "areas_of_expertise": [],
+            "courses_offered": [],
+            "portfolio_links": [],
+            "free_materials": [],
+            "years_of_experience": 0,
+            "hourly_rate": 0,
+            "average_rating": 0.0,
+            "total_reviews": 0,
+            "total_students": 0,
+            "total_sessions": 0,
+            "total_earnings": 0.0,
+            "is_active": True,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        })
+
     # Remove verification code
     del verification_codes[email]
     
@@ -143,8 +167,6 @@ async def verify_email(verification_data: EmailVerificationRequest, db = Depends
             "token_type": "bearer"
         }
     }
-
-from pydantic import BaseModel
 
 class LoginRequest(BaseModel):
     email: str
@@ -176,10 +198,10 @@ async def login(request: LoginRequest, db = Depends(get_database)):
         )
 
     # Block banned users
-    if user.get("is_banned", False):
+    if user.get("is_banned"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been suspended. Contact support."
+            detail=f"Account suspended. Reason: {user.get('ban_reason', 'Violation of terms')}"
         )
     
     # Create tokens
@@ -208,7 +230,7 @@ async def admin_login(request: LoginRequest, db = Depends(get_database)):
             detail="Not an admin account"
         )
 
-    access_token = create_access_token(data={"sub": user["email"]})
+    access_token = create_access_token(data={"sub": user["email"], "role": "admin"})
     refresh_token = create_refresh_token(data={"sub": user["email"]})
 
     return {

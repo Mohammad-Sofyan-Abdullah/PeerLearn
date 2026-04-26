@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Play, FileText, Gift, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
@@ -205,15 +206,77 @@ export default function TeacherProfileViewPage() {
               <h2 className="text-xl font-bold text-gray-900 mb-4">Courses Offered</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {teacher.courses_offered.map((course, index) => (
-                  <div
-                    key={index}
-                    className="p-3 border border-gray-200 rounded-lg hover:border-indigo-500 transition-colors"
-                  >
+                  <div key={index} className="p-3 border border-gray-200 rounded-lg hover:border-indigo-500 transition-colors">
                     {course}
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Free Resources */}
+            {teacher.free_materials && teacher.free_materials.length > 0 && (
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Gift className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900">Free Resources</h2>
+                    <p className="text-xs text-gray-400">Preview {teacher.full_name}'s teaching style — free to view or download</p>
+                  </div>
+                </div>
+                <div className="grid gap-3">
+                  {teacher.free_materials.map((material, i) => {
+                    const isPdf = material.type === 'pdf_link';
+                    const isVideo = material.type === 'video_link';
+                    const actionLabel = isPdf ? '📥 Download / View' : isVideo ? '▶ Watch' : '🔗 Open';
+                    const actionClass = isPdf
+                      ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                      : isVideo
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white';
+
+                    return (
+                      <div key={i} className="flex items-center space-x-3 p-4 bg-gradient-to-r from-blue-50 to-white border border-blue-100 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all">
+                        {/* Icon */}
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                          isPdf ? 'bg-orange-100' : isVideo ? 'bg-red-100' : material.type === 'note' ? 'bg-purple-100' : 'bg-blue-100'
+                        }`}>
+                          <span className="text-xl">
+                            {isPdf ? '📄' : isVideo ? '🎥' : material.type === 'note' ? '📝' : '🔗'}
+                          </span>
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 flex-wrap gap-y-0.5">
+                            <p className="text-sm font-semibold text-gray-900">{material.title}</p>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">FREE</span>
+                          </div>
+                          {material.description && (
+                            <p className="text-xs text-gray-500 mt-0.5">{material.description}</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-0.5 capitalize">
+                            {isPdf ? 'PDF / Document' : isVideo ? 'Video' : material.type === 'note' ? 'Written Note' : 'External Link'}
+                          </p>
+                        </div>
+
+                        {/* Action button */}
+                        <a
+                          href={material.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={isPdf ? true : undefined}
+                          className={`flex-shrink-0 px-3 py-2 text-xs font-semibold rounded-lg transition-colors ${actionClass}`}
+                        >
+                          {actionLabel}
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Reviews */}
             <div className="bg-white shadow rounded-lg p-6">

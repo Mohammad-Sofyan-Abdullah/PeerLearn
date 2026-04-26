@@ -38,6 +38,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ShareToFriendModal from '../components/ShareToFriendModal';
 import ConfirmModal from '../components/ConfirmModal';
 import MarkdownRenderer, { MarkdownRendererLight } from '../components/MarkdownRenderer';
+import FurtherReadingSection from '../components/FurtherReadingSection';
 
 // Button import verified
 const DocumentSessionPage = () => {
@@ -544,6 +545,11 @@ const DocumentSessionPage = () => {
                                                 <MarkdownRenderer content={session.detailed_summary} />
                                             </div>
                                         </div>
+
+                                        {/* Further Reading — async, non-blocking */}
+                                        <FurtherReadingSection
+                                            topic={session.document_title || session.topic}
+                                        />
                                     </>
                                 )}
                             </motion.div>

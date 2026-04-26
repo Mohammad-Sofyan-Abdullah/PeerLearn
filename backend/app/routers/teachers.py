@@ -37,36 +37,34 @@ async def create_teacher_profile(
                 detail="Only users with teacher role can create teacher profiles"
             )
         
+        # Build profile dict — upsert into existing minimal doc (created at registration)
         user_id_obj = ObjectId(str(current_user.id))
-        
-        # Check if profile already exists
-        existing_profile = await db.teacher_profiles.find_one({"user_id": user_id_obj})
-        if existing_profile:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Teacher profile already exists"
-            )
-        
-        # Create profile
         profile_dict = profile_data.model_dump()
         profile_dict["user_id"] = user_id_obj
-        profile_dict["status"] = TeacherStatus.APPROVED  # Auto-approve for now
-        profile_dict["average_rating"] = 0.0
-        profile_dict["total_reviews"] = 0
-        profile_dict["total_students"] = 0
-        profile_dict["total_sessions"] = 0
-        profile_dict["total_earnings"] = 0.0
+        # Preserve existing status: only escalate profile_incomplete->pending on first real submission
+        _existing = await db.teacher_profiles.find_one({"user_id": user_id_obj})
+        _es = _existing.get("status", "profile_incomplete") if _existing else "profile_incomplete"
+        profile_dict["status"] = "pending" if _es == "profile_incomplete" else _es
+        profile_dict["average_rating"] = _existing.get("average_rating", 0.0) if _existing else 0.0
+        profile_dict["total_reviews"] = _existing.get("total_reviews", 0) if _existing else 0
+        profile_dict["total_students"] = _existing.get("total_students", 0) if _existing else 0
+        profile_dict["total_sessions"] = _existing.get("total_sessions", 0) if _existing else 0
+        profile_dict["total_earnings"] = _existing.get("total_earnings", 0.0) if _existing else 0.0
         profile_dict["is_active"] = True
-        profile_dict["created_at"] = datetime.utcnow()
+        profile_dict.pop("free_materials", None)  # managed separately via /profile/materials
         profile_dict["updated_at"] = datetime.utcnow()
-        
-        result = await db.teacher_profiles.insert_one(profile_dict)
-        profile_dict["_id"] = result.inserted_id
-        
+
+        result = await db.teacher_profiles.update_one(
+            {"user_id": user_id_obj},
+            {"$set": profile_dict, "$setOnInsert": {"created_at": datetime.utcnow(), "free_materials": []}},
+            upsert=True
+        )
+        profile_id = result.upserted_id or (await db.teacher_profiles.find_one({"user_id": user_id_obj}))["_id"]
+        final_status = profile_dict["status"]
         return {
-            "message": "Teacher profile created successfully",
-            "id": str(result.inserted_id),
-            "status": "pending_approval"
+            "message": "Teacher profile saved" + (" — pending admin approval" if final_status == "pending" else " successfully"),
+            "id": str(profile_id),
+            "status": final_status
         }
         
     except HTTPException:
@@ -210,7 +208,7 @@ async def get_all_teachers(
     """Get all approved teachers with optional filters"""
     try:
         # Show all active teachers (including pending for testing)
-        query = {"is_active": True}
+        query = {"is_active": True, "status": "approved"}  # Only approved teachers visible to students
         
         # Apply filters
         if subject:
@@ -309,6 +307,7 @@ async def get_teacher_profile(
             "availability_schedule": profile.get("availability_schedule", {}),
             "online_tools": profile.get("online_tools", []),
             "portfolio_links": profile.get("portfolio_links", []),
+            "free_materials": profile.get("free_materials", []),
             "average_rating": profile.get("average_rating", 0.0),
             "total_reviews": profile.get("total_reviews", 0),
             "total_students": profile.get("total_students", 0),
@@ -376,16 +375,23 @@ async def create_teacher_review(
                 detail="You can only review teachers after your session request is accepted"
             )
         
-        # Check if already reviewed
-        existing_review = await db.teacher_reviews.find_one({
-            "teacher_id": teacher_obj_id,
-            "student_id": student_id_obj
-        })
+        # Check if already reviewed (per session if session_id provided, else per teacher)
+        if review_data.session_id:
+            session_obj_id = ObjectId(str(review_data.session_id))
+            existing_review = await db.teacher_reviews.find_one({
+                "session_id": session_obj_id,
+                "student_id": student_id_obj
+            })
+        else:
+            existing_review = await db.teacher_reviews.find_one({
+                "teacher_id": teacher_obj_id,
+                "student_id": student_id_obj
+            })
         
         if existing_review:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You have already reviewed this teacher"
+                detail="You have already reviewed this teacher for this session"
             )
         
         # Create review
@@ -396,6 +402,7 @@ async def create_teacher_review(
             "student_avatar": current_user.avatar,
             "rating": review_data.rating,
             "comment": review_data.comment,
+            "session_id": ObjectId(str(review_data.session_id)) if review_data.session_id else None,
             "created_at": datetime.utcnow()
         }
         
@@ -592,11 +599,19 @@ async def get_received_hire_requests(
     try:
         user_id_obj = ObjectId(str(current_user.id))
         
-        # Check if user is a teacher
+        # Check if user is a teacher with an approved profile
         if current_user.role != UserRole.TEACHER:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only teachers can view received hire requests"
+            )
+
+        # Verify profile is approved
+        teacher_prof = await db.teacher_profiles.find_one({"user_id": user_id_obj})
+        if teacher_prof and teacher_prof.get("status") != "approved":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your teacher profile is pending approval. You cannot receive hire requests yet."
             )
         
         requests = await db.hire_requests.find({"teacher_id": user_id_obj}).sort("created_at", -1).to_list(length=100)
@@ -916,3 +931,112 @@ async def get_teacher_analytics(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get analytics"
         )
+
+
+# ============================================================================
+# Free Materials
+# ============================================================================
+
+from pydantic import BaseModel as _BaseModel
+
+class FreeMaterialIn(_BaseModel):
+    title: str
+    type: str
+    url: str
+    description: str = ""
+    is_free: bool = True
+
+
+@router.post("/profile/materials", response_model=dict)
+async def add_free_material(
+    material: FreeMaterialIn,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Add a free material to teacher profile (approved teachers only)"""
+    if current_user.role != UserRole.TEACHER:
+        raise HTTPException(status_code=403, detail="Teachers only")
+    user_id_obj = ObjectId(str(current_user.id))
+    profile = await db.teacher_profiles.find_one({"user_id": user_id_obj})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Teacher profile not found")
+    if profile.get("status") != "approved":
+        raise HTTPException(status_code=403, detail="Your teacher profile is pending approval")
+    material_dict = material.dict()
+    material_dict["added_at"] = datetime.utcnow().isoformat()
+    await db.teacher_profiles.update_one(
+        {"user_id": user_id_obj},
+        {"$push": {"free_materials": material_dict}, "$set": {"updated_at": datetime.utcnow()}}
+    )
+    updated = await db.teacher_profiles.find_one({"user_id": user_id_obj})
+    return {"message": "Material added", "free_materials": updated.get("free_materials", [])}
+
+
+@router.delete("/profile/materials/{material_index}", response_model=dict)
+async def remove_free_material(
+    material_index: int,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Remove a free material by index"""
+    if current_user.role != UserRole.TEACHER:
+        raise HTTPException(status_code=403, detail="Teachers only")
+    user_id_obj = ObjectId(str(current_user.id))
+    profile = await db.teacher_profiles.find_one({"user_id": user_id_obj})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Teacher profile not found")
+    materials = profile.get("free_materials", [])
+    if material_index < 0 or material_index >= len(materials):
+        raise HTTPException(status_code=400, detail="Invalid material index")
+    materials.pop(material_index)
+    await db.teacher_profiles.update_one(
+        {"user_id": user_id_obj},
+        {"$set": {"free_materials": materials, "updated_at": datetime.utcnow()}}
+    )
+    return {"message": "Material removed", "free_materials": materials}
+
+
+# ── Teacher's own received reviews ────────────────────────────────────────────
+
+@router.get("/profile/my-reviews", response_model=List[dict])
+async def get_my_received_reviews(
+    skip: int = 0,
+    limit: int = 50,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """Return all reviews received by the currently authenticated teacher."""
+    if current_user.role != UserRole.TEACHER:
+        raise HTTPException(status_code=403, detail="Teachers only")
+
+    user_id_obj = ObjectId(str(current_user.id))
+    profile = await db.teacher_profiles.find_one({"user_id": user_id_obj})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Teacher profile not found")
+
+    teacher_profile_id = profile["_id"]
+    raw = await db.teacher_reviews.find(
+        {"teacher_id": teacher_profile_id}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(length=limit)
+
+    result = []
+    for r in raw:
+        review_dict = {
+            "id": str(r["_id"]),
+            "rating": r.get("rating", 0),
+            "comment": r.get("comment", ""),
+            "created_at": r["created_at"].isoformat() if r.get("created_at") else None,
+            "student_name": r.get("student_name", "Anonymous"),
+            "student_avatar": r.get("student_avatar"),
+        }
+        # Enrich with live user data if student_name is missing
+        if not review_dict["student_name"] or review_dict["student_name"] == "Anonymous":
+            student = await db.users.find_one(
+                {"_id": r.get("student_id")}, {"name": 1, "avatar": 1}
+            )
+            if student:
+                review_dict["student_name"] = student.get("name", "Anonymous")
+                review_dict["student_avatar"] = student.get("avatar")
+        result.append(review_dict)
+
+    return result

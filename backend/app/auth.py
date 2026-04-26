@@ -101,7 +101,7 @@ async def get_current_active_user(current_user: UserInDB = Depends(get_current_u
     if getattr(current_user, 'is_banned', False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been suspended. Contact support."
+            detail="Account suspended. Contact support."
         )
     return current_user
 

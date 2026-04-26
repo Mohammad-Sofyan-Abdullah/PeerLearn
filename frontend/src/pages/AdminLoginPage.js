@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -9,12 +10,18 @@ export default function AdminLoginPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (error) setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     try {
       const res = await axios.post(`${API_BASE}/auth/admin/login`, {
         email: form.email,
@@ -28,33 +35,37 @@ export default function AdminLoginPage() {
       navigate('/admin/dashboard');
     } catch (err) {
       const detail = err.response?.data?.detail;
-      toast.error(typeof detail === 'string' ? detail : 'Login failed');
+      setError(typeof detail === 'string' ? detail : 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-red-600 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-white">Admin Portal</h1>
-          <p className="text-gray-400 mt-1 text-sm">PeerLearn — Superuser Access</p>
-        </div>
 
         {/* Card */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+
+          {/* Header */}
+          <div className="flex items-center space-x-4 mb-8">
+            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <Shield className="h-7 w-7 text-white" />
+            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Admin Email
+              <h1 className="text-2xl font-bold text-gray-900">PeerLearn Admin</h1>
+              <p className="text-sm text-gray-500">Restricted access — authorized personnel only</p>
+            </div>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Email address
               </label>
               <input
                 type="email"
@@ -62,55 +73,72 @@ export default function AdminLoginPage() {
                 value={form.email}
                 onChange={handleChange}
                 required
+                autoFocus
                 placeholder="admin@peerlearn.com"
-                className="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3
-                           focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500
-                           placeholder-gray-500 transition"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm
+                           placeholder-gray-400 focus:outline-none focus:border-blue-500
+                           focus:ring-2 focus:ring-blue-500/20 transition"
               />
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Password
               </label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                placeholder="••••••••"
-                className="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3
-                           focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500
-                           placeholder-gray-500 transition"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 pr-11 text-gray-900 text-sm
+                             placeholder-gray-400 focus:outline-none focus:border-blue-500
+                             focus:ring-2 focus:ring-blue-500/20 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
+            {/* Error banner */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed
-                         text-white font-semibold py-3 rounded-xl transition duration-200 flex items-center
-                         justify-center gap-2"
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400
+                         text-white font-medium rounded-xl transition-colors flex items-center
+                         justify-center space-x-2"
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  Authenticating…
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Signing in…</span>
                 </>
               ) : (
-                'Sign In as Admin'
+                <span>Sign In</span>
               )}
             </button>
           </form>
-
-          <p className="mt-6 text-center text-xs text-gray-600">
-            This portal is restricted to platform administrators only.
-          </p>
         </div>
+
+        {/* Footer */}
+        <p className="text-gray-500 text-xs text-center mt-6">
+          © 2025 PeerLearn. Admin access is logged and monitored.
+        </p>
       </div>
     </div>
   );

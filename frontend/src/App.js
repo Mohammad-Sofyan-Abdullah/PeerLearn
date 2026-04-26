@@ -37,6 +37,7 @@ import TeacherReviewsPage from './pages/TeacherReviewsPage';
 import StudentSessionsPage from './pages/StudentSessionsPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import ResourcesPage from './pages/ResourcesPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -95,6 +96,7 @@ function App() {
                   <Route path="messages" element={<ConversationsListPage />} />
                   <Route path="messages/:friendId" element={<MessagesPage />} />
                   <Route path="sessions" element={<TeacherSessionsPage />} />
+                  <Route path="marketplace" element={<MarketplacePage />} />
                   <Route path="earnings" element={<TeacherDashboardPage />} />
                   <Route path="reviews" element={<TeacherReviewsPage />} />
                 </Route>
@@ -129,6 +131,7 @@ function App() {
                   <Route path="teachers/:teacherId" element={<TeacherProfileViewPage />} />
                   <Route path="my-hire-requests" element={<MyHireRequestsPage />} />
                   <Route path="my-sessions" element={<StudentSessionsPage />} />
+                  <Route path="resources" element={<ResourcesPage />} />
                 </Route>
 
                 {/* Catch all route */}

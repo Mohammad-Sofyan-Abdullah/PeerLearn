@@ -362,6 +362,34 @@ class Message(MessageBase):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
+# Resource Recommendation Models
+class ResourceMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    resources: Optional[List[dict]] = None  # structured resources if AI found any
+
+class ResourceSession(BaseModel):
+    user_id: PyObjectId
+    session_name: str
+    topic: str
+    messages: List[ResourceMessage] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str, datetime: lambda v: v.isoformat()}
+
+class ResourceSessionInDB(ResourceSession):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str, datetime: lambda v: v.isoformat()}
+
 # WebSocket Models
 class WebSocketMessage(BaseModel):
     type: str
@@ -776,6 +804,7 @@ class TeacherReview(BaseModel):
 class TeacherReviewCreate(BaseModel):
     rating: int
     comment: Optional[str] = None
+    session_id: Optional[str] = None  # hire_request _id; if provided, one review per session
 
 # Hiring/Session Models
 class HireRequestStatus(str, Enum):

@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
+import toast from 'react-hot-toast';
+import { Plus, Trash2, Gift, Loader2 } from 'lucide-react';
 
 export default function TeacherProfileSetupPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [error, setError] = useState('');
   const [profileData, setProfileData] = useState({
     full_name: user?.name || '',
@@ -33,19 +37,43 @@ export default function TeacherProfileSetupPage() {
     link: ''
   });
 
+  // Free materials state (managed separately — saved immediately to API, not bundled with profile form)
+  const [freeMaterials, setFreeMaterials] = useState([]);
+  const [newMaterial, setNewMaterial] = useState({ title: '', type: 'pdf_link', url: '', description: '' });
+  const [addingMaterial, setAddingMaterial] = useState(false);
+  const [removingIndex, setRemovingIndex] = useState(null);
+
   useEffect(() => {
-    // Check if user already has a profile
-    const checkProfile = async () => {
+    // Try to load existing profile — if found, populate form for editing
+    const loadProfile = async () => {
       try {
-        await api.get('/teachers/profile');
-        // Profile exists, redirect to dashboard
-        navigate('/teacher/dashboard');
+        const res = await api.get('/teachers/profile');
+        const p = res.data;
+        setIsEditMode(true);
+        setProfileData({
+          full_name: p.full_name || user?.name || '',
+          short_bio: p.short_bio || '',
+          areas_of_expertise: p.areas_of_expertise || [],
+          courses_offered: p.courses_offered || [],
+          academic_degrees: p.academic_degrees || [],
+          certifications: p.certifications || [],
+          years_of_experience: p.years_of_experience ?? 0,
+          languages_spoken: p.languages_spoken || [],
+          hourly_rate: p.hourly_rate || '',
+          availability_schedule: p.availability_schedule || {},
+          online_tools: p.online_tools || [],
+          portfolio_links: p.portfolio_links || []
+        });
+        setFreeMaterials(p.free_materials || []);
       } catch (err) {
-        // No profile exists, continue with setup
+        // No profile yet — setup mode, form stays blank
+        setIsEditMode(false);
+      } finally {
+        setInitialLoading(false);
       }
     };
-    checkProfile();
-  }, [navigate]);
+    loadProfile();
+  }, [user]);
 
   const handleChange = (e) => {
     setProfileData({
@@ -77,30 +105,87 @@ export default function TeacherProfileSetupPage() {
     setLoading(true);
 
     try {
-      await api.post('/teachers/profile', {
+      const payload = {
         ...profileData,
         hourly_rate: parseFloat(profileData.hourly_rate) || null
-      });
+      };
 
-      alert('Profile created successfully! Awaiting admin approval.');
+      // Always POST — backend uses upsert so this works for both create and update
+      await api.post('/teachers/profile', payload);
+
+      toast.success(isEditMode
+        ? 'Profile updated successfully!'
+        : 'Profile created! Awaiting admin approval.');
       navigate('/teacher/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create profile');
+      setError(err.response?.data?.detail || 'Failed to save profile');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAddMaterial = async () => {
+    if (!newMaterial.title.trim() || !newMaterial.url.trim()) return;
+    setAddingMaterial(true);
+    try {
+      const res = await api.post('/teachers/profile/materials', newMaterial);
+      setFreeMaterials(res.data.free_materials || []);
+      setNewMaterial({ title: '', type: 'pdf_link', url: '', description: '' });
+      toast.success('Resource added');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add resource');
+    } finally {
+      setAddingMaterial(false);
+    }
+  };
+
+  const handleRemoveMaterial = async (index) => {
+    if (!window.confirm('Remove this resource?')) return;
+    setRemovingIndex(index);
+    try {
+      const res = await api.delete(`/teachers/profile/materials/${index}`);
+      setFreeMaterials(res.data.free_materials || []);
+      toast.success('Resource removed');
+    } catch (err) {
+      toast.error('Failed to remove resource');
+    } finally {
+      setRemovingIndex(null);
+    }
+  };
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading profile...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow rounded-lg p-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Set Up Your Teacher Profile
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Complete your profile to start offering teaching services. Your profile will be reviewed by our team before going live.
-          </p>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">
+                {isEditMode ? 'Edit Your Teacher Profile' : 'Set Up Your Teacher Profile'}
+              </h2>
+              <p className="text-gray-600 mt-1">
+                {isEditMode
+                  ? 'Update your profile details. Changes will be saved immediately.'
+                  : 'Complete your profile to start offering teaching services. Your profile will be reviewed by our team before going live.'}
+              </p>
+            </div>
+            {isEditMode && (
+              <button
+                type="button"
+                onClick={() => navigate('/teacher/dashboard')}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                ← Back to Dashboard
+              </button>
+            )}
+          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
@@ -112,7 +197,6 @@ export default function TeacherProfileSetupPage() {
             {/* Basic Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Full Name</label>
@@ -260,6 +344,42 @@ export default function TeacherProfileSetupPage() {
               </div>
             </div>
 
+            {/* Certifications */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Certifications</h3>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={currentInput.certification}
+                  onChange={(e) => setCurrentInput({ ...currentInput, certification: e.target.value })}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleArrayInput('certifications', 'certification'))}
+                  className="flex-1 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="e.g., Google Certified Educator"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleArrayInput('certifications', 'certification')}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                >
+                  Add
+                </button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {profileData.certifications.map((item, index) => (
+                  <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                    {item}
+                    <button
+                      type="button"
+                      onClick={() => removeArrayItem('certifications', index)}
+                      className="ml-2 text-yellow-600 hover:text-yellow-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
             {/* Languages */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Languages Spoken</h3>
@@ -350,14 +470,136 @@ export default function TeacherProfileSetupPage() {
               </div>
             </div>
 
+            {/* Free Resources — only shown in edit mode since profile must exist first */}
+            {isEditMode && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Free Resources for Students</h3>
+                <p className="text-sm text-gray-500 mb-4">Upload PDFs, share video links, or add notes that students can view/download before deciding to hire you.</p>
+
+                {/* Existing materials list */}
+                {freeMaterials.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {freeMaterials.map((m, i) => (
+                      <div key={i} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <span className="text-xl flex-shrink-0">
+                            {m.type === 'video_link' ? '🎥' : m.type === 'pdf_link' ? '📄' : m.type === 'note' ? '📝' : '🔗'}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{m.title}</p>
+                            {m.description && <p className="text-xs text-gray-500 truncate">{m.description}</p>}
+                            <a href={m.url} target="_blank" rel="noopener noreferrer"
+                               className="text-xs text-blue-600 hover:underline truncate block max-w-xs">
+                              {m.url}
+                            </a>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMaterial(i)}
+                          disabled={removingIndex === i}
+                          className="ml-3 flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                        >
+                          {removingIndex === i
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Trash2 className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {freeMaterials.length === 0 && (
+                  <div className="flex items-center space-x-3 bg-blue-50 border border-dashed border-blue-200 rounded-xl px-4 py-4 mb-4">
+                    <Gift className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                    <p className="text-sm text-blue-600">No resources added yet. Add a PDF or video link below — students see these on your profile before booking.</p>
+                  </div>
+                )}
+
+                {/* Add new material inline form */}
+                <div className="border border-gray-200 rounded-xl p-4 bg-white space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Add a resource</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
+                      <select
+                        value={newMaterial.type}
+                        onChange={e => setNewMaterial(prev => ({...prev, type: e.target.value}))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                      >
+                        <option value="pdf_link">📄 PDF / Document</option>
+                        <option value="video_link">🎥 Video Link</option>
+                        <option value="note">📝 Written Note</option>
+                        <option value="external_link">🔗 External Link</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={newMaterial.title}
+                        onChange={e => setNewMaterial(prev => ({...prev, title: e.target.value}))}
+                        placeholder="e.g. Sample Lesson Notes"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">URL (Google Drive, Dropbox, YouTube, etc.)</label>
+                      <input
+                        type="url"
+                        value={newMaterial.url}
+                        onChange={e => setNewMaterial(prev => ({...prev, url: e.target.value}))}
+                        placeholder="https://drive.google.com/..."
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Description <span className="font-normal text-gray-400">(optional)</span></label>
+                      <input
+                        type="text"
+                        value={newMaterial.description}
+                        onChange={e => setNewMaterial(prev => ({...prev, description: e.target.value}))}
+                        placeholder="Brief description of what students will find inside"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAddMaterial}
+                      disabled={!newMaterial.title.trim() || !newMaterial.url.trim() || addingMaterial}
+                      className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {addingMaterial
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Plus className="h-4 w-4" />}
+                      <span>{addingMaterial ? 'Adding...' : 'Add Resource'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Submit Button */}
-            <div className="pt-6">
+            <div className="pt-6 flex gap-3">
+              {isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/teacher/dashboard')}
+                  className="flex-1 py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                {loading ? 'Creating Profile...' : 'Create Teacher Profile'}
+                {loading
+                  ? (isEditMode ? 'Saving...' : 'Creating Profile...')
+                  : (isEditMode ? 'Save Changes' : 'Create Teacher Profile')}
               </button>
             </div>
           </form>

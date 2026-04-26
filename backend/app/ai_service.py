@@ -1309,5 +1309,74 @@ Create a comprehensive multiple-choice quiz to test understanding of this docume
             raise ValueError(f"Document quiz generation failed: {str(e)}")
 
 
-ai_service = AIService()
 
+    async def get_resource_recommendations(
+        self,
+        query: str,
+        conversation_history,
+        marketplace_notes,
+    ) -> str:
+        """Return curated academic resource recommendations as clean HTML."""
+        try:
+            marketplace_section = ""
+            if marketplace_notes:
+                items = "\n".join(
+                    f'<li><strong>{t}</strong> — Available in the PeerLearn Marketplace</li>'
+                    for t in marketplace_notes
+                )
+                marketplace_section = (
+                    "<h3>\U0001f4dd From PeerLearn Marketplace</h3>\n<ul>\n"
+                    + items + "\n</ul>"
+                )
+
+            system_prompt = (
+                "You are an expert academic resource curator for university students. "
+                "When given a topic or question, find and recommend the best freely available learning resources.\n\n"
+                "Structure your response in this exact HTML format (no markdown, only HTML tags):\n\n"
+                "<h2>\U0001f4da Recommended Resources</h2>\n\n"
+                "<h3>Research Papers</h3>\n<ul>\n"
+                "<li><strong>Paper Title</strong> — Brief description. "
+                'Search: <a href="https://arxiv.org/search/?query=TOPIC" target="_blank" rel="noopener noreferrer">arXiv</a>, '
+                '<a href="https://scholar.google.com/scholar?q=TOPIC" target="_blank" rel="noopener noreferrer">Google Scholar</a></li>\n</ul>\n\n'
+                "<h3>Free Textbooks &amp; Lecture Notes</h3>\n<ul>\n"
+                "<li><strong>Book Title</strong> — Author, description, where to find it free</li>\n</ul>\n\n"
+                "<h3>Video Courses &amp; Playlists</h3>\n<ul>\n"
+                "<li><strong>Course Name</strong> — Platform, instructor, why recommended. "
+                'Link: <a href="URL" target="_blank" rel="noopener noreferrer">URL</a></li>\n</ul>\n\n'
+                "<h3>Quick Start Path</h3>\n<ol>\n"
+                "<li>Start with: [beginner resource]</li>\n"
+                "<li>Then: [intermediate resource]</li>\n"
+                "<li>Advanced: [advanced resource]</li>\n</ol>\n"
+            )
+            if marketplace_section:
+                system_prompt += "\n" + marketplace_section
+            system_prompt += (
+                "\n\nRULES:\n"
+                "- Return ONLY the HTML above. No markdown, no code fences.\n"
+                '- All <a> tags MUST have target="_blank" rel="noopener noreferrer".\n'
+                "- Be specific with real resource names.\n"
+                "- Prioritise free, open-access resources.\n"
+                "- Tailor recommendations to the exact query."
+            )
+
+            messages = [{"role": "system", "content": system_prompt}]
+            for turn in (conversation_history or [])[-8:]:
+                messages.append({"role": turn["role"], "content": turn["content"]})
+            messages.append({"role": "user", "content": query})
+
+            response = self.client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=messages,
+                temperature=0.4,
+                max_tokens=1800,
+            )
+            html = (response.choices[0].message.content or "").strip()
+            if html.startswith("```"):
+                html = html.split("\n", 1)[-1]
+                html = html.rsplit("```", 1)[0]
+            return html.strip()
+        except Exception as e:
+            logger.error(f"Error generating resource recommendations: {e}")
+            return "<p>Unable to generate recommendations at this time. Please try again later.</p>"
+
+ai_service = AIService()

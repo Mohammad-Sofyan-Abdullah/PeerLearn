@@ -118,6 +118,10 @@ app.include_router(teachers.router)
 from app.routers import admin
 app.include_router(admin.router)
 
+# Import and include Resources (Literature Recommendations) router
+from app.routers import resources
+app.include_router(resources.router)
+
 # Mount static files for message uploads
 import os
 if os.path.exists("static"):

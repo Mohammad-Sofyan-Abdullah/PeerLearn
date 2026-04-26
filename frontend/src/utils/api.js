@@ -230,6 +230,18 @@ export const chatAPI = {
 };
 
 
+// Resources (Literature Recommendation) API
+export const resourcesAPI = {
+  getSessions: () => api.get('/resources/sessions'),
+  createSession: (data) => api.post('/resources/sessions', data),
+  getSession: (id) => api.get(`/resources/sessions/${id}`),
+  getRecommendations: (sessionId, query) =>
+    api.post(`/resources/sessions/${sessionId}/recommend`, { query }),
+  deleteSession: (id) => api.delete(`/resources/sessions/${id}`),
+  // Stateless quick recommendation — no session created
+  quickRecommendation: (topic) => api.get('/resources/quick', { params: { topic } }),
+};
+
 // YouTube API
 export const youtubeAPI = {
   createSession: (videoUrl) => longRunningApi.post('/youtube/sessions', { video_url: videoUrl }),
@@ -377,6 +389,10 @@ export const teachersAPI = {
   
   // Analytics
   getDashboardAnalytics: () => api.get('/teachers/dashboard/analytics'),
+
+  // Free Materials
+  addFreeMaterial: (material) => api.post('/teachers/profile/materials', material),
+  removeFreeMaterial: (index) => api.delete(`/teachers/profile/materials/${index}`),
 };
 
 export default api;

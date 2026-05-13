@@ -242,6 +242,15 @@ export const resourcesAPI = {
   quickRecommendation: (topic) => api.get('/resources/quick', { params: { topic } }),
 };
 
+// Teacher Research & Lecture Planning API
+export const teacherResourcesAPI = {
+  getSessions:   ()                    => api.get('/teacher-resources/sessions'),
+  createSession: (data)                => api.post('/teacher-resources/sessions', data),
+  getSession:    (id)                  => api.get(`/teacher-resources/sessions/${id}`),
+  getPlan:       (sessionId, query)    => api.post(`/teacher-resources/sessions/${sessionId}/plan`, { query }),
+  deleteSession: (id)                  => api.delete(`/teacher-resources/sessions/${id}`),
+};
+
 // YouTube API
 export const youtubeAPI = {
   createSession: (videoUrl) => longRunningApi.post('/youtube/sessions', { video_url: videoUrl }),
@@ -363,6 +372,10 @@ export const notesAPI = {
   // Export a shared document to the user's own notes
   exportSharedDocument: (documentId) =>
     api.post(`/notes/documents/${documentId}/export-to-notes`),
+
+  // Outer RAG: cross-document search
+  searchNotes: (query, limit = 10) =>
+    api.get('/notes/search', { params: { q: query, limit } }),
 };
 
 // Teachers API

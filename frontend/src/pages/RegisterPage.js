@@ -130,14 +130,14 @@ const RegisterPage = () => {
     >
       <div className="flex items-center justify-center mb-8">
         <BookOpen className="h-12 w-12 text-primary-600" />
-        <span className="ml-3 text-3xl font-bold text-gray-900">PeerLearn</span>
+        <span className="ml-3 text-3xl font-bold text-gray-900 dark:text-white">PeerLearn</span>
       </div>
 
       <div>
-        <h2 className="mt-6 text-3xl font-bold text-gray-900">
+        <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
           Create your account
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Join thousands of students learning together
         </p>
       </div>
@@ -154,7 +154,7 @@ const RegisterPage = () => {
         )}
 
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Full Name
           </label>
           <div className="mt-1 relative">
@@ -175,7 +175,7 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             University Email
           </label>
           <div className="mt-1 relative">
@@ -197,7 +197,7 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label htmlFor="student_id" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="student_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Student ID (Optional)
           </label>
           <div className="mt-1 relative">
@@ -217,7 +217,7 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Password
           </label>
           <div className="mt-1 relative">
@@ -250,7 +250,7 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Confirm Password
           </label>
           <div className="mt-1 relative">
@@ -296,20 +296,20 @@ const RegisterPage = () => {
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{' '}
             <Link
               to="/login"
-              className="font-medium text-primary-600 hover:text-primary-500"
+              className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
             >
               Sign in here
             </Link>
           </p>
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             Are you a teacher?{' '}
             <Link
               to="/teacher/register"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
             >
               Register as Teacher
             </Link>
@@ -329,11 +329,11 @@ const RegisterPage = () => {
         <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 mb-4">
           <Mail className="h-6 w-6 text-primary-600" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
           Verify your email
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
-          We've sent a verification code to <strong>{formData.email}</strong>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          We've sent a verification code to <strong className="dark:text-gray-300">{formData.email}</strong>
         </p>
       </div>
 
@@ -345,7 +345,7 @@ const RegisterPage = () => {
         )}
 
         <div>
-          <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Verification Code
           </label>
           <input
@@ -398,17 +398,17 @@ const RegisterPage = () => {
         <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
           <User className="h-6 w-6 text-green-600" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
           Complete your profile
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Tell us about your interests to personalize your experience
         </p>
       </div>
 
       <form className="space-y-6" onSubmit={handleProfileSubmit}>
         <div>
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Bio (Optional)
           </label>
           <textarea
@@ -423,7 +423,7 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Study Interests
           </label>
           <div className="flex space-x-2 mb-2">

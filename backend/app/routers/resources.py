@@ -211,3 +211,156 @@ async def quick_recommendation(
         marketplace_notes=marketplace_notes,
     )
     return {"content": ai_html, "topic": topic}
+
+
+# ─── Teacher Research & Planning Router ──────────────────────────────────────
+
+teacher_router = APIRouter()
+
+
+@teacher_router.post("/sessions")
+async def create_teacher_research_session(
+    body: dict,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database),
+):
+    """Create a new teacher research / lecture planning session."""
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Teacher access only")
+
+    topic = (body.get("topic") or "").strip()
+    if not topic:
+        raise HTTPException(status_code=400, detail="topic is required")
+
+    session_name = (body.get("session_name") or topic)[:50]
+
+    session_doc = {
+        "user_id":      ObjectId(str(current_user.id)),
+        "session_name": session_name,
+        "topic":        topic,
+        "session_type": "teacher_research",   # distinguishes from student sessions
+        "messages":     [],
+        "created_at":   datetime.utcnow(),
+        "updated_at":   datetime.utcnow(),
+    }
+    result = await db.resource_sessions.insert_one(session_doc)
+    created = await db.resource_sessions.find_one({"_id": result.inserted_id})
+    return _serialise_session(created)
+
+
+@teacher_router.get("/sessions")
+async def get_teacher_research_sessions(
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database),
+):
+    """Return all teacher research sessions for the current user, newest first."""
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Teacher access only")
+
+    sessions = await db.resource_sessions.find(
+        {
+            "user_id":      ObjectId(str(current_user.id)),
+            "session_type": "teacher_research",
+        }
+    ).sort("updated_at", -1).to_list(length=50)
+
+    return [_serialise_session(s) for s in sessions]
+
+
+@teacher_router.get("/sessions/{session_id}")
+async def get_teacher_research_session(
+    session_id: str,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database),
+):
+    """Return a single teacher research session with full message history."""
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Teacher access only")
+
+    try:
+        oid = ObjectId(session_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid session ID")
+
+    session = await db.resource_sessions.find_one(
+        {"_id": oid, "user_id": ObjectId(str(current_user.id))}
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return _serialise_session(session)
+
+
+@teacher_router.post("/sessions/{session_id}/plan")
+async def get_research_plan(
+    session_id: str,
+    body: dict,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database),
+):
+    """
+    Send a topic / follow-up query; AI returns teaching resources +
+    lecture delivery plan. Appends both messages to session history.
+    """
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Teacher access only")
+
+    query = (body.get("query") or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query is required")
+
+    try:
+        oid = ObjectId(session_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid session ID")
+
+    session = await db.resource_sessions.find_one(
+        {"_id": oid, "user_id": ObjectId(str(current_user.id))}
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Call the teacher-specific AI function
+    ai_response = await ai_service.get_teacher_research_plan(
+        topic=query,
+        conversation_history=session.get("messages", []),
+    )
+
+    now = datetime.utcnow()
+    user_msg = {"role": "user",      "content": query,       "timestamp": now}
+    ai_msg   = {"role": "assistant", "content": ai_response, "timestamp": now}
+
+    await db.resource_sessions.update_one(
+        {"_id": oid},
+        {
+            "$push": {"messages": {"$each": [user_msg, ai_msg]}},
+            "$set":  {"updated_at": now},
+        },
+    )
+
+    return {
+        "user_message": {"role": "user",      "content": query,       "timestamp": now.isoformat()},
+        "ai_response":  {"role": "assistant", "content": ai_response, "timestamp": now.isoformat()},
+    }
+
+
+@teacher_router.delete("/sessions/{session_id}")
+async def delete_teacher_research_session(
+    session_id: str,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database),
+):
+    """Delete a teacher research session."""
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Teacher access only")
+
+    try:
+        oid = ObjectId(session_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid session ID")
+
+    result = await db.resource_sessions.delete_one(
+        {"_id": oid, "user_id": ObjectId(str(current_user.id))}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"message": "Session deleted"}

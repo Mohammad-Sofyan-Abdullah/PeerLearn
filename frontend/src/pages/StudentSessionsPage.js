@@ -142,31 +142,31 @@ const StudentSessionsPage = () => {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Sessions</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Sessions</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             Manage your learning sessions with teachers
           </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{sessions.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Sessions</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{sessions.length}</p>
               </div>
               <Calendar className="h-8 w-8 text-indigo-600" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Upcoming</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Upcoming</p>
                 <p className="text-2xl font-bold text-green-600">
                   {sessions.filter(s => isUpcoming(s)).length}
                 </p>
@@ -174,10 +174,10 @@ const StudentSessionsPage = () => {
               <Clock className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Completed</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {sessions.filter(s => s.status === 'completed').length}
                 </p>
@@ -185,10 +185,10 @@ const StudentSessionsPage = () => {
               <CheckCircle className="h-8 w-8 text-blue-600" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pending</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
                 <p className="text-2xl font-bold text-yellow-600">
                   {sessions.filter(s => s.status === 'pending').length}
                 </p>
@@ -205,7 +205,7 @@ const StudentSessionsPage = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filter === 'all'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             All ({sessions.length})
@@ -215,7 +215,7 @@ const StudentSessionsPage = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filter === 'upcoming'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             Upcoming ({sessions.filter(s => isUpcoming(s) || s.status === 'accepted').length})
@@ -225,7 +225,7 @@ const StudentSessionsPage = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filter === 'completed'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             Completed ({sessions.filter(s => s.status === 'completed').length})
@@ -235,7 +235,7 @@ const StudentSessionsPage = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filter === 'cancelled'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             Cancelled ({sessions.filter(s => s.status === 'rejected' || s.status === 'cancelled').length})
@@ -244,12 +244,12 @@ const StudentSessionsPage = () => {
 
         {/* Sessions List */}
         {filteredSessions.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-12 text-center">
             <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No sessions found
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               {filter === 'all'
                 ? 'Book a session with a teacher to get started'
                 : `No ${filter} sessions`}
@@ -258,7 +258,7 @@ const StudentSessionsPage = () => {
         ) : (
           <div className="space-y-4">
             {filteredSessions.map((session) => (
-              <div key={session.id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div key={session.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
                   {/* Teacher Info */}
                   <div className="flex items-start gap-4 flex-1">
@@ -276,7 +276,7 @@ const StudentSessionsPage = () => {
 
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold text-gray-900">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                           {session.teacher?.name || 'Unknown Teacher'}
                         </h3>
                         <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(session.status)}`}>
@@ -286,13 +286,13 @@ const StudentSessionsPage = () => {
 
                       {/* Session Details */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                        <div className="flex items-center gap-2 text-gray-600">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                           <Calendar className="h-4 w-4" />
                           <span className="text-sm font-medium">Subject:</span>
                           <span className="text-sm">{session.subject}</span>
                         </div>
                         {session.start_time && (
-                          <div className="flex items-center gap-2 text-gray-600">
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                             <Clock className="h-4 w-4" />
                           <span className="text-sm">
                               {formatPKT(session.start_time)}
@@ -300,11 +300,11 @@ const StudentSessionsPage = () => {
                             </span>
                           </div>
                         )}
-                        <div className="flex items-center gap-2 text-gray-600">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                           <span className="text-sm font-medium">Type:</span>
                           <span className="text-sm capitalize">{session.session_type}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-600">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                           <span className="text-sm font-medium">Price:</span>
                           <span className="text-sm font-semibold text-indigo-600">
                             ${session.total_price}

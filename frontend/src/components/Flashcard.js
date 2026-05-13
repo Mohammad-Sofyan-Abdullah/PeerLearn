@@ -53,7 +53,7 @@ const Flashcard = ({
   return (
     <div className="w-full max-w-2xl mx-auto">
       {/* Card counter */}
-      <div className="text-center mb-4 text-gray-600">
+      <div className="text-center mb-4 text-gray-600 dark:text-gray-400">
         Card {cardNumber} of {totalCards}
       </div>
 
@@ -68,19 +68,19 @@ const Flashcard = ({
         >
           {/* Front of card - Question */}
           <motion.div
-            className="absolute w-full h-full bg-gray-600 rounded-2xl shadow-2xl p-8 flex flex-col items-center justify-center"
+            className="absolute w-full h-full bg-gradient-to-br from-indigo-600 to-indigo-700 dark:from-gray-700 dark:to-gray-800 rounded-2xl shadow-2xl p-8 flex flex-col items-center justify-center"
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
             }}
           >
             <div className="text-white text-center">
-              <div className="mb-4 text-sm font-medium opacity-80">QUESTION</div>
-              <div className="text-2xl font-semibold leading-relaxed">
+              <div className="mb-4 inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-xs font-semibold tracking-widest uppercase">Question</div>
+              <div className="text-2xl font-semibold leading-relaxed mt-2">
                 {flashcard.question}
               </div>
             </div>
-            <div className="absolute bottom-6 text-white text-sm opacity-60 flex items-center gap-2">
+            <div className="absolute bottom-6 text-white/60 text-sm flex items-center gap-2">
               <RotateCw size={16} />
               Click to flip
             </div>
@@ -88,7 +88,7 @@ const Flashcard = ({
 
           {/* Back of card - Answer */}
           <motion.div
-            className="absolute w-full h-full bg-black rounded-2xl shadow-2xl p-8 flex flex-col items-center justify-center"
+            className="absolute w-full h-full bg-gradient-to-br from-emerald-600 to-teal-700 dark:from-gray-900 dark:to-gray-950 border dark:border-gray-700 rounded-2xl shadow-2xl p-8 flex flex-col items-center justify-center"
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
@@ -96,12 +96,12 @@ const Flashcard = ({
             }}
           >
             <div className="text-white text-center">
-              <div className="mb-4 text-sm font-medium opacity-80">ANSWER</div>
-              <div className="text-xl font-medium leading-relaxed">
+              <div className="mb-4 inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-xs font-semibold tracking-widest uppercase">Answer</div>
+              <div className="text-xl font-medium leading-relaxed mt-2">
                 {flashcard.answer}
               </div>
             </div>
-            <div className="absolute bottom-6 text-white text-sm opacity-60 flex items-center gap-2">
+            <div className="absolute bottom-6 text-white/60 text-sm flex items-center gap-2">
               <RotateCw size={16} />
               Click to flip back
             </div>
@@ -117,7 +117,7 @@ const Flashcard = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6 overflow-hidden"
+            className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-6 overflow-hidden"
           >
             <div className="flex items-center gap-2 mb-3 text-amber-800 font-semibold">
               <Sparkles size={20} />
@@ -128,7 +128,7 @@ const Flashcard = ({
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
               </div>
             ) : (
-              <div className="text-gray-700 prose prose-sm max-w-none">
+              <div className="text-gray-700 dark:text-gray-300 prose prose-sm max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {explanation}
                 </ReactMarkdown>
@@ -147,8 +147,8 @@ const Flashcard = ({
           onClick={handlePrevious}
           disabled={cardNumber === 1}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${cardNumber === 1
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 shadow-sm'
+              ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+              : 'bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm'
             }`}
         >
           <ChevronLeft size={20} />
@@ -174,8 +174,8 @@ const Flashcard = ({
           onClick={handleNext}
           disabled={cardNumber === totalCards}
           className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${cardNumber === totalCards
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 shadow-sm'
+              ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+              : 'bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 shadow-sm'
             }`}
         >
           Next
@@ -191,7 +191,7 @@ const Flashcard = ({
               key={index}
               className={`h-1.5 rounded-full transition-all ${index + 1 === cardNumber
                   ? 'w-8 bg-blue-500'
-                  : 'w-1.5 bg-gray-300'
+                  : 'w-1.5 bg-gray-300 dark:bg-gray-600'
                 }`}
             />
           ))}

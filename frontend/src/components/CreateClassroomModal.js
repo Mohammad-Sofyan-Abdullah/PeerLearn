@@ -87,7 +87,7 @@ const CreateClassroomModal = ({ isOpen, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            className="fixed inset-0 bg-black bg-opacity-60 transition-opacity"
             onClick={onClose}
           />
 
@@ -95,23 +95,23 @@ const CreateClassroomModal = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
+            className="relative transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100 dark:border-gray-700"
           >
-            <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+            <div className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <BookOpen className="h-6 w-6 text-primary-600" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       Create New Classroom
                     </h3>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="rounded-md bg-white text-gray-400 hover:text-gray-600"
+                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -119,7 +119,7 @@ const CreateClassroomModal = ({ isOpen, onClose }) => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Classroom Name
                   </label>
                   <input
@@ -135,7 +135,7 @@ const CreateClassroomModal = ({ isOpen, onClose }) => {
                 </div>
 
                 <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Description
                   </label>
                   <textarea
@@ -147,37 +147,7 @@ const CreateClassroomModal = ({ isOpen, onClose }) => {
                     className="input mt-1"
                     placeholder="Describe what this classroom is for..."
                   />
-                  <Button
-                    type="button"
-                    onClick={handleGetSuggestions}
-                    disabled={!formData.description.trim()}
-                    isLoading={isLoadingSuggestions}
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    leftIcon={<Sparkles className="h-4 w-4" />}
-                  >
-                    Get AI Name Suggestions
-                  </Button>
                 </div>
-
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="border border-gray-200 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Suggested Classroom Names:</p>
-                    <div className="space-y-1">
-                      {suggestions.map((suggestion, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => selectSuggestion(suggestion)}
-                          className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex justify-end space-x-3 pt-4">
                   <Button

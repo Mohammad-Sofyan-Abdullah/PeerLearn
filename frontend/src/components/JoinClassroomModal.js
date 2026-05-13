@@ -42,7 +42,7 @@ const JoinClassroomModal = ({ isOpen, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            className="fixed inset-0 bg-black bg-opacity-60 transition-opacity"
             onClick={onClose}
           />
 
@@ -50,23 +50,23 @@ const JoinClassroomModal = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+            className="relative transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-gray-100 dark:border-gray-700"
           >
-            <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+            <div className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <Users className="h-6 w-6 text-primary-600" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       Join Classroom
                     </h3>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="rounded-md bg-white text-gray-400 hover:text-gray-600"
+                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -74,7 +74,7 @@ const JoinClassroomModal = ({ isOpen, onClose }) => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Invite Code
                   </label>
                   <input
@@ -88,7 +88,7 @@ const JoinClassroomModal = ({ isOpen, onClose }) => {
                     placeholder="Enter invite code"
                     maxLength="8"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Ask your classmate or teacher for the 8-character invite code
                   </p>
                 </div>

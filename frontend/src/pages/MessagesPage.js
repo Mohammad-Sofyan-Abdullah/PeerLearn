@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -150,12 +151,24 @@ const MessagesPage = () => {
   const sendMessageMutation = useMutation(
     ({ conversationId, formData }) => messagesAPI.sendMessage(conversationId, formData),
     {
-      onSuccess: (response) => {
+      onSuccess: (response, { formData }) => {
         console.log('Message sent successfully:', response);
+        const sentContent = formData.get('content') || '';
         setMessage('');
         setSelectedFile(null);
         refetchMessages();
         scrollToBottom();
+        // If message contains @AI, do a delayed refetch to capture the AI response
+        if (sentContent.toUpperCase().includes('@AI')) {
+          setTimeout(() => {
+            refetchMessages();
+            scrollToBottom();
+          }, 2500);
+          setTimeout(() => {
+            refetchMessages();
+            scrollToBottom();
+          }, 5000);
+        }
       },
       onError: (error) => {
         console.error('Send message error:', error);
@@ -568,10 +581,10 @@ const MessagesPage = () => {
         className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}
       >
         <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isAI
-          ? 'bg-purple-100 border border-purple-200'
+          ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700'
           : isOwnMessage
             ? 'bg-blue-500 text-white'
-            : 'bg-gray-200 text-gray-800'
+            : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
           }`}>
 
           {/* AI Badge */}
@@ -638,6 +651,13 @@ const MessagesPage = () => {
 
           {/* Message Text */}
           {msg.content && (() => {
+            if (isAI) {
+              return (
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-purple-900/50 prose-pre:text-purple-100">
+                  <ReactMarkdown>{safeText(msg.content)}</ReactMarkdown>
+                </div>
+              );
+            }
             const renderMessageContent = (content) => {
               if (!content) return null;
               const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -649,7 +669,7 @@ const MessagesPage = () => {
                     href={part}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`underline break-all ${isOwnMessage ? 'text-blue-100 hover:text-white' : 'text-blue-600 hover:text-blue-800'}`}
+                    className={`underline break-all ${isOwnMessage ? 'text-blue-100 hover:text-white' : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'}`}
                   >
                     {part}
                   </a>
@@ -704,15 +724,15 @@ const MessagesPage = () => {
   // Show inbox view when no friend is selected
   if (!friendId) {
     return (
-      <div className="h-full bg-gray-50">
+      <div className="h-full bg-gray-50 dark:bg-gray-950">
         <div className="max-w-4xl mx-auto p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Messages</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Messages</h1>
 
           {friends.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No conversations yet</h3>
-              <p className="text-gray-500">Add friends to start messaging them!</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
+              <MessageSquare className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No conversations yet</h3>
+              <p className="text-gray-500 dark:text-gray-400">Add friends to start messaging them!</p>
               <Button
                 onClick={() => navigate('/friends')}
                 className="mt-4"
@@ -721,7 +741,7 @@ const MessagesPage = () => {
               </Button>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow divide-y divide-gray-200 dark:divide-gray-700">
               {friends.map((friend) => {
                 const friendId = friend.id || friend._id;
                 const friendName = friend.name || friend.full_name || 'Friend';
@@ -731,14 +751,14 @@ const MessagesPage = () => {
                   <button
                     key={friendId}
                     onClick={() => navigate(`/messages/${friendId}`)}
-                    className="w-full p-4 hover:bg-gray-50 transition-colors flex items-center gap-4 text-left"
+                    className="w-full p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-4 text-left"
                   >
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
                       {friendAvatar}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{friendName}</h3>
-                      <p className="text-sm text-gray-500">Click to start conversation</p>
+                      <h3 className="font-medium text-gray-900 dark:text-white">{friendName}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Click to start conversation</p>
                     </div>
                     <MessageSquare className="h-5 w-5 text-gray-400" />
                   </button>
@@ -760,9 +780,9 @@ const MessagesPage = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-900">
         <div className="flex items-center gap-3">
           <Button
             onClick={() => navigate('/friends')}
@@ -777,7 +797,7 @@ const MessagesPage = () => {
               {safeText(friendInfo?.name || friendInfo?.full_name)?.charAt(0) || 'F'}
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-gray-900 dark:text-white">
                 {safeText(friendInfo?.name || friendInfo?.full_name) || 'Friend'}
               </h2>
             </div>
@@ -796,13 +816,13 @@ const MessagesPage = () => {
             if (messages.length === 0) {
               return (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Send className="w-8 h-8 text-gray-400" />
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Send className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Start a conversation</h3>
-                  <p className="text-gray-500">Send your first message to get started!</p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    💡 Try typing <span className="font-mono bg-gray-100 px-1 rounded">@AI</span> to get help from our AI assistant
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Start a conversation</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Send your first message to get started!</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                    💡 Try typing <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">@AI</span> to get help from our AI assistant
                   </p>
                 </div>
               );
@@ -848,7 +868,7 @@ const MessagesPage = () => {
 
       {/* Selected File Preview */}
       {selectedFile && (
-        <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center gap-2">
             <div className="flex-1">
               <p className="text-sm font-medium">{selectedFile.name}</p>
@@ -865,14 +885,14 @@ const MessagesPage = () => {
       )}
 
       {/* Message Input */}
-      <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-white">
+      <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-900">
         <div className="flex items-end gap-2">
           {/* Attachment Menu */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
             >
               <Paperclip className="w-5 h-5" />
             </button>
@@ -883,7 +903,7 @@ const MessagesPage = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute bottom-12 left-0 bg-white rounded-lg shadow-lg border p-2 z-10"
+                  className="absolute bottom-12 left-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 z-10"
                 >
                   <button
                     type="button"
@@ -920,7 +940,7 @@ const MessagesPage = () => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={isRecording ? "Recording voice message..." : "Type a message... (use @AI for AI help)"}
-              className={` mt-2.5 w-full p-3 pr-12 border border-gray-300 rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isRecording ? 'bg-red-50 border-red-300' : ''
+              className={`mt-2.5 w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 ${isRecording ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' : ''
                 }`}
               rows={1}
               disabled={isRecording}
@@ -962,7 +982,7 @@ const MessagesPage = () => {
               onClick={isRecording ? stopRecording : startRecording}
               className={`p-3 rounded-full transition-all duration-200 ${isRecording
                 ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-lg'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 hover:shadow-md'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-md'
                 }`}
               title={isRecording ? "Stop recording" : "Start voice recording"}
             >
@@ -979,7 +999,7 @@ const MessagesPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-20 left-4 bg-white rounded-lg shadow-lg border p-3 z-20"
+            className="absolute bottom-20 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3 z-20"
           >
             <div className="grid grid-cols-8 gap-2">
               {emojis.map((emoji, index) => (

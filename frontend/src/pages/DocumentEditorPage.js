@@ -579,18 +579,18 @@ const DocumentEditorPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
       {/* Main Editor Area */}
       <div className={`flex-1 flex flex-col ${isChatOpen ? 'mr-80' : ''} transition-all duration-300`}>
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/notes')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
+                <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="flex items-center space-x-2">
                 <FileText className="h-5 w-5 text-blue-600" />
@@ -601,7 +601,7 @@ const DocumentEditorPage = () => {
                     setTitle(e.target.value);
                     setHasUnsavedChanges(true);
                   }}
-                  className="text-lg font-medium bg-transparent border-none outline-none focus:bg-gray-50 px-2 py-1 rounded"
+                  className="text-lg font-medium bg-transparent border-none outline-none focus:bg-gray-50 dark:focus:bg-gray-800 px-2 py-1 rounded text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="Document title..."
                 />
               </div>
@@ -609,11 +609,11 @@ const DocumentEditorPage = () => {
             
             <div className="flex items-center space-x-4">
               {/* Undo/Redo Controls */}
-              <div className="flex items-center space-x-1 border-r border-gray-200 pr-4">
+              <div className="flex items-center space-x-1 border-r border-gray-200 dark:border-gray-700 pr-4">
                 <button
                   onClick={handleUndo}
                   disabled={undoStack.length <= 1}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Undo (Ctrl+Z)"
                 >
                   <Undo className="h-4 w-4" />
@@ -621,7 +621,7 @@ const DocumentEditorPage = () => {
                 <button
                   onClick={handleRedo}
                   disabled={redoStack.length === 0}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Redo (Ctrl+Y)"
                 >
                   <Redo className="h-4 w-4" />
@@ -629,11 +629,11 @@ const DocumentEditorPage = () => {
               </div>
               
               {/* Formatting Controls */}
-              <div className="flex items-center space-x-1 border-r border-gray-200 pr-4">
+              <div className="flex items-center space-x-1 border-r border-gray-200 dark:border-gray-700 pr-4">
                 <button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleBold}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   title="Bold (Ctrl+B)"
                 >
                   <Bold className="h-4 w-4" />
@@ -641,7 +641,7 @@ const DocumentEditorPage = () => {
                 <button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleItalic}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   title="Italic (Ctrl+I)"
                 >
                   <Italic className="h-4 w-4" />
@@ -649,7 +649,7 @@ const DocumentEditorPage = () => {
                 <button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleUnderline}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   title="Underline (Ctrl+U)"
                 >
                   <Underline className="h-4 w-4" />
@@ -657,7 +657,7 @@ const DocumentEditorPage = () => {
                 <button
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleHighlight}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   title="Highlight (Ctrl+H)"
                 >
                   <Highlighter className="h-4 w-4" />
@@ -665,7 +665,7 @@ const DocumentEditorPage = () => {
               </div>
               
               {/* Font Controls */}
-              <div className="flex items-center space-x-2 border-r border-gray-200 pr-4">
+              <div className="flex items-center space-x-2 border-r border-gray-200 dark:border-gray-700 pr-4">
                 <select
                   value={fontSize}
                   onMouseDown={(e) => e.preventDefault()}
@@ -675,7 +675,7 @@ const DocumentEditorPage = () => {
                       editorRef.current.style.fontSize = `${e.target.value}px`;
                     }
                   }}
-                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                  className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="12">12px</option>
                   <option value="14">14px</option>
@@ -693,7 +693,7 @@ const DocumentEditorPage = () => {
                       editorRef.current.style.fontFamily = e.target.value;
                     }
                   }}
-                  className="text-sm border border-gray-300 rounded px-2 py-1"
+                  className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="Inter">Inter</option>
                   <option value="Arial">Arial</option>
@@ -707,7 +707,7 @@ const DocumentEditorPage = () => {
               <button
                 onClick={() => setIsChatOpen(!isChatOpen)}
                 className={`p-2 rounded transition-colors ${
-                  isChatOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+                  isChatOpen ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
                 title="Toggle AI Chat"
               >
@@ -718,7 +718,7 @@ const DocumentEditorPage = () => {
               {noteDocument && String(noteDocument.user_id) === String(user?.id) && (
                 <button
                   onClick={() => navigate(`/notes/view/${documentId}`)}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors text-gray-600"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-600 dark:text-gray-400"
                   title="View document"
                 >
                   <Eye className="h-5 w-5" />
@@ -785,19 +785,19 @@ const DocumentEditorPage = () => {
         </div>
 
         {/* Rich Text Editor */}
-        <div className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex-1 p-0 sm:p-4 flex flex-col">
+          <div className="w-full h-full flex flex-col">
+            <div className="bg-white dark:bg-gray-900 rounded-none sm:rounded-lg border-0 sm:border border-gray-200 dark:border-gray-800 shadow-sm flex-1 flex flex-col">
               <div
                 ref={editorRef}
                 contentEditable
                 onInput={handleEditorInput}
-                className="w-full min-h-[600px] p-6 bg-white rounded-lg border-none resize-none outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                className="w-full flex-1 min-h-[600px] p-6 sm:p-10 bg-white dark:bg-gray-900 sm:rounded-lg border-none resize-none outline-none focus:ring-0 focus:outline-none"
                 style={{
                   fontSize: `${fontSize}px`,
                   fontFamily: fontFamily,
                   lineHeight: '1.6',
-                  color: '#374151'
+                  color: undefined
                 }}
                 spellCheck="true"
                 suppressContentEditableWarning={true}
@@ -806,7 +806,7 @@ const DocumentEditorPage = () => {
             </div>
             
             {/* Status Bar */}
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center space-x-4">
                 <span>{editorRef.current ? editorRef.current.textContent.length : 0} characters</span>
                 <span>{editorRef.current ? editorRef.current.textContent.split(/\s+/).filter(word => word.length > 0).length : 0} words</span>
@@ -830,29 +830,29 @@ const DocumentEditorPage = () => {
           initial={{ x: 320 }}
           animate={{ x: 0 }}
           exit={{ x: 320 }}
-          className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 flex flex-col"
+          className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col"
         >
           {/* Chat Header */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center space-x-2">
               <Sparkles className="h-5 w-5 text-purple-600" />
-              <h3 className="font-medium text-gray-900">AI Assistant</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white">AI Assistant</h3>
             </div>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Ask questions or request notes generation
             </p>
           </div>
 
           {/* Quick Prompts */}
-          <div className="p-4 border-b border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Quick Actions</h4>
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quick Actions</h4>
             <div className="space-y-2">
               {quickPrompts.map((prompt, index) => (
                 <button
                   key={index}
                   onClick={() => handleQuickPrompt(prompt)}
                   disabled={generateNotesMutation.isLoading}
-                  className="w-full text-left text-sm p-2 bg-gray-50 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+                  className="w-full text-left text-sm p-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition-colors disabled:opacity-50"
                 >
                   {prompt}
                 </button>
@@ -863,7 +863,7 @@ const DocumentEditorPage = () => {
           {/* Chat History */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {chatHistory.length === 0 ? (
-              <div className="text-center text-gray-500 mt-8">
+              <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
                 <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No conversation yet</p>
                 <p className="text-xs">Ask a question to get started</p>
@@ -871,10 +871,10 @@ const DocumentEditorPage = () => {
             ) : (
               chatHistory.map((chat, index) => (
                 <div key={index} className="space-y-2">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <p className="text-sm text-blue-900">{chat.message}</p>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                    <p className="text-sm text-blue-900 dark:text-blue-300">{chat.message}</p>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                     <MarkdownRenderer content={chat.response} />
                   </div>
                 </div>
@@ -892,7 +892,7 @@ const DocumentEditorPage = () => {
           </div>
 
           {/* Chat Input */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <form onSubmit={handleChatSubmit} className="flex space-x-2">
               <input
                 type="text"

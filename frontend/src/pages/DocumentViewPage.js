@@ -112,7 +112,7 @@ const DocumentViewPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -120,10 +120,10 @@ const DocumentViewPage = () => {
 
   if (isError || !document) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
           <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900">Document not found</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Document not found</h2>
           <button
             onClick={() => navigate('/notes')}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -136,23 +136,23 @@ const DocumentViewPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Top Bar */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
             {/* Left: Back + title */}
             <div className="flex items-center space-x-4 min-w-0">
               <button
                 onClick={() => navigate('/notes')}
-                className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex-shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 title="Back to Notes"
               >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
+                <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="min-w-0">
-                <h1 className="text-lg font-semibold text-gray-900 truncate">{document.title}</h1>
-                <div className="flex items-center space-x-3 text-xs text-gray-500 mt-0.5">
+                <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{document.title}</h1>
+                <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   <span className="flex items-center space-x-1">
                     <Calendar className="h-3 w-3" />
                     <span>{formatDate(document.updated_at)}</span>
@@ -180,7 +180,7 @@ const DocumentViewPage = () => {
               <button
                 onClick={handleExport}
                 disabled={isExporting}
-                className="flex items-center space-x-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center space-x-1.5 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors disabled:opacity-50"
               >
                 {isExporting ? (
                   <Loader className="h-4 w-4 animate-spin" />
@@ -232,18 +232,18 @@ const DocumentViewPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+          className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden"
         >
           {/* Document header */}
-          <div className="px-10 pt-10 pb-6 border-b border-gray-100">
-            <h2 className="text-3xl font-bold text-gray-900">{document.title}</h2>
+          <div className="px-10 pt-10 pb-6 border-b border-gray-100 dark:border-gray-800">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{document.title}</h2>
           </div>
 
           {/* Prose body */}
           <div className="px-10 py-8">
             {document.content ? (
               <div
-                className="prose prose-lg max-w-none text-gray-800 leading-relaxed"
+                className="prose prose-lg max-w-none text-gray-800 dark:text-gray-200 dark:prose-invert leading-relaxed"
                 style={{
                   fontFamily: 'Inter, system-ui, sans-serif',
                   lineHeight: '1.75',

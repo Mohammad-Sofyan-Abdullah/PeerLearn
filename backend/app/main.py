@@ -69,6 +69,16 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up PeerLearn API...")
     await connect_to_mongo()
+
+    # Ensure MongoDB text index for cross-document search exists
+    try:
+        from app.database import get_database as _get_db
+        from app.routers.notes import ensure_document_text_index
+        _db = await _get_db()
+        await ensure_document_text_index(_db)
+    except Exception as _e:
+        logger.warning(f"Could not create document text index on startup (non-fatal): {_e}")
+
     yield
     # Shutdown
     logger.info("Shutting down PeerLearn API...")
@@ -121,6 +131,10 @@ app.include_router(admin.router)
 # Import and include Resources (Literature Recommendations) router
 from app.routers import resources
 app.include_router(resources.router)
+
+# Import and include Teacher Research & Planning router
+from app.routers.resources import teacher_router
+app.include_router(teacher_router, prefix="/teacher-resources", tags=["teacher-resources"])
 
 # Mount static files for message uploads
 import os

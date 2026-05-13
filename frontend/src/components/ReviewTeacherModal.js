@@ -52,20 +52,20 @@ const ReviewTeacherModal = ({ isOpen, onClose, teacher, session }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-2xl max-w-md w-full p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Review Teacher</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Review Teacher</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
 
         {/* Teacher Info */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
             {teacher.profile_picture ? (
               <img
@@ -79,9 +79,9 @@ const ReviewTeacherModal = ({ isOpen, onClose, teacher, session }) => {
               </div>
             )}
             <div>
-              <h3 className="font-semibold text-gray-900">{teacherName}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{teacherName}</h3>
               {session && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Session: {new Date(session.created_at).toLocaleDateString()}
                 </p>
               )}
@@ -92,7 +92,7 @@ const ReviewTeacherModal = ({ isOpen, onClose, teacher, session }) => {
         <form onSubmit={handleSubmit}>
           {/* Rating */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Rating
             </label>
             <div className="flex gap-2">
@@ -116,7 +116,7 @@ const ReviewTeacherModal = ({ isOpen, onClose, teacher, session }) => {
               ))}
             </div>
             {rating > 0 && (
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 {rating === 5 && 'Excellent!'}
                 {rating === 4 && 'Very Good'}
                 {rating === 3 && 'Good'}
@@ -136,10 +136,10 @@ const ReviewTeacherModal = ({ isOpen, onClose, teacher, session }) => {
               onChange={(e) => setComment(e.target.value)}
               placeholder="Share your experience with this teacher..."
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {comment.length}/500 characters
             </p>
           </div>
@@ -149,7 +149,7 @@ const ReviewTeacherModal = ({ isOpen, onClose, teacher, session }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg transition-colors"
               disabled={reviewMutation.isLoading}
             >
               Cancel

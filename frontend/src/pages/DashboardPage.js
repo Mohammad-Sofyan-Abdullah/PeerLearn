@@ -6,7 +6,6 @@ import {
   Users,
   BookOpen,
   TrendingUp,
-  // Calendar, // Removed unused import
   Search,
   Copy,
   Check
@@ -100,22 +99,22 @@ const DashboardPage = () => {
       name: 'Total Classrooms',
       value: classrooms.length,
       icon: BookOpen,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
     {
       name: 'Learning Streak',
       value: user?.learning_streaks || 0,
       icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-100 dark:bg-green-900/30',
     },
     {
       name: 'Friends',
       value: user?.friends?.length || 0,
       icon: Users,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     },
   ];
 
@@ -130,30 +129,31 @@ const DashboardPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Welcome back, {user?.name?.split(' ')[0]}! 👋
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Ready to continue your learning journey?
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-3">
-          <div className="mt-4 sm:mt-0 flex space-x-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowJoinModal(true)}
-            >
-              Join Classroom
-            </Button>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              leftIcon={<Plus className="h-4 w-4" />}
-            >
-              Create Classroom
-            </Button>
-          </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setShowJoinModal(true)}
+          >
+            Join Classroom
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setShowCreateModal(true)}
+            leftIcon={<Plus className="h-4 w-4" />}
+          >
+            Create Classroom
+          </Button>
         </div>
       </div>
 
@@ -175,8 +175,8 @@ const DashboardPage = () => {
                     <Icon className={`h-6 w-6 ${stat.color}`} />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.name}</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stat.value}</p>
                   </div>
                 </div>
               </div>
@@ -188,8 +188,8 @@ const DashboardPage = () => {
       {/* Search and Classrooms */}
       <div className="card">
         <div className="card-header">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Your Classrooms</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Your Classrooms</h3>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
@@ -199,7 +199,7 @@ const DashboardPage = () => {
                 placeholder="Search classrooms..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-10 w-64"
+                className="input pl-10 w-full sm:w-64"
               />
             </div>
           </div>
@@ -207,21 +207,19 @@ const DashboardPage = () => {
         <div className="card-content">
           {filteredClassrooms.length === 0 ? (
             <div className="text-center py-12">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No classrooms</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <BookOpen className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No classrooms</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {searchQuery ? 'No classrooms match your search.' : 'Get started by creating a new classroom.'}
               </p>
               {!searchQuery && (
                 <div className="mt-6">
-                  <div className="mt-6">
-                    <Button
-                      onClick={() => setShowCreateModal(true)}
-                      leftIcon={<Plus className="h-4 w-4" />}
-                    >
-                      Create your first classroom
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => setShowCreateModal(true)}
+                    leftIcon={<Plus className="h-4 w-4" />}
+                  >
+                    Create your first classroom
+                  </Button>
                 </div>
               )}
             </div>
@@ -233,35 +231,35 @@ const DashboardPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-md dark:hover:shadow-gray-900/40 transition-shadow cursor-pointer"
                   onClick={() => navigate(`/classroom/${classroom.id || classroom._id}`)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="text-lg font-medium text-gray-900 mb-1">
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
                         {classroom.name}
                       </h4>
                       {classroom.description && (
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                           {classroom.description}
                         </p>
                       )}
-                      <div className="flex items-center text-xs text-gray-500">
+                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-500">
                         <Users className="h-4 w-4 mr-1" />
                         {classroom.members?.length || 0} members
                       </div>
                     </div>
-                    {(classroom.admin_id || classroom.admin_id) === (user?.id || user?._id) && (
+                    {(classroom.admin_id) === (user?.id || user?._id) && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           copyInviteCode(classroom.invite_code);
                         }}
-                        className="ml-2 p-1 text-gray-400 hover:text-gray-600"
+                        className="ml-2 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
                         title="Copy invite code"
                       >
                         {copiedCode === classroom.invite_code ? (
-                          <Check className="h-4 w-4 text-green-600" />
+                          <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -269,10 +267,10 @@ const DashboardPage = () => {
                     )}
                   </div>
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 dark:text-gray-500">
                       Created {new Date(classroom.created_at).toLocaleDateString()}
                     </span>
-                    {(classroom.admin_id || classroom.admin_id) === (user?.id || user?._id) && (
+                    {(classroom.admin_id) === (user?.id || user?._id) && (
                       <span className="badge-primary text-xs">Admin</span>
                     )}
                   </div>
@@ -302,5 +300,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-
-

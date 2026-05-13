@@ -16,6 +16,7 @@ from app.ai_service import ai_service
 from app.ocr_service import ocr_service
 from app.export_service import export_service
 from bson import ObjectId
+from pymongo import TEXT
 import logging
 import os
 import shutil
@@ -25,6 +26,25 @@ from io import BytesIO
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notes", tags=["notes"])
+
+
+async def ensure_document_text_index(db) -> None:
+    """
+    Create a MongoDB full-text index on the documents collection if it doesn't exist.
+    Title matches are weighted 10x higher than content matches.
+    Safe to call on every startup — silently ignores 'already exists' errors.
+    """
+    try:
+        await db.documents.create_index(
+            [("title", TEXT), ("content", TEXT)],
+            name="document_text_search",
+            weights={"title": 10, "content": 1},
+            default_language="english"
+        )
+        logger.info("Document text index ensured.")
+    except Exception as e:
+        # Index already exists or other non-fatal error — do not crash startup
+        logger.info(f"Document text index already exists or skipped: {e}")
 
 # Upload directory for documents
 UPLOAD_DIR = "static/uploads/documents"
@@ -794,6 +814,152 @@ async def get_chat_history(
             chat["user_id"] = str(chat["user_id"])
     
     return {"chat_history": chat_history}
+
+
+# ============================================
+# OUTER RAG: CROSS-DOCUMENT SEARCH ENDPOINT
+# ============================================
+
+
+def extract_relevant_snippet(content: str, query: str, window: int = 300) -> str:
+    """
+    Extract the most relevant text snippet from content around the first
+    occurrence of any query term. Falls back to the document start if no
+    term is found.
+    """
+    if not content:
+        return ""
+
+    content_lower = content.lower()
+    query_terms = [t for t in query.lower().split() if len(t) > 2]
+
+    # Find earliest occurrence of any query term
+    best_pos = len(content)
+    for term in query_terms:
+        pos = content_lower.find(term)
+        if pos != -1 and pos < best_pos:
+            best_pos = pos
+
+    if best_pos == len(content):
+        # No term match — return document start
+        return content[:window] + ("..." if len(content) > window else "")
+
+    start = max(0, best_pos - window // 3)
+    end = min(len(content), best_pos + window)
+
+    snippet = content[start:end]
+    if start > 0:
+        snippet = "..." + snippet
+    if end < len(content):
+        snippet = snippet + "..."
+
+    return snippet
+
+
+@router.get("/search")
+async def search_notes_across_documents(
+    q: str,
+    limit: int = 10,
+    current_user: UserInDB = Depends(get_current_active_user),
+    db = Depends(get_database)
+):
+    """
+    Outer RAG: cross-document semantic-style search across all user notes.
+    Uses MongoDB full-text search (with title weighted 10x) and falls back
+    to substring matching if the text index is not yet available.
+    Returns matching documents with relevant snippets and an AI-generated
+    summary that explains what was found.
+    """
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Query too short — please enter at least 2 characters"
+        )
+
+    user_id = ObjectId(str(current_user.id))
+
+    # ── Step 1: MongoDB full-text search within user's documents ──────────────
+    try:
+        cursor = db.documents.find(
+            {
+                "$text": {"$search": q},
+                "user_id": user_id,
+                "status": {"$ne": "deleted"}
+            },
+            {
+                "score": {"$meta": "textScore"},
+                "title": 1,
+                "content": 1,
+                "created_at": 1,
+                "updated_at": 1,
+                "user_id": 1,
+            }
+        ).sort([("score", {"$meta": "textScore"})]).limit(limit)
+
+        documents = await cursor.to_list(length=limit)
+    except Exception:
+        # Text index not ready yet — fall back to substring search
+        logger.info("Text index not ready, falling back to substring search.")
+        all_docs = await db.documents.find(
+            {"user_id": user_id, "status": {"$ne": "deleted"}}
+        ).to_list(length=500)
+        q_lower = q.lower()
+        documents = [
+            d for d in all_docs
+            if q_lower in d.get("title", "").lower()
+            or q_lower in d.get("content", "").lower()
+        ][:limit]
+
+    if not documents:
+        return {
+            "query": q,
+            "results": [],
+            "ai_summary": None,
+            "total": 0
+        }
+
+    # ── Step 2: Build result cards with relevant snippets ─────────────────────
+    results = []
+    combined_context = []
+
+    for doc in documents:
+        content = doc.get("content", "")
+        title = doc.get("title", "Untitled")
+
+        snippet = extract_relevant_snippet(content, q, window=300)
+        combined_context.append(f"Document: {title}\nSnippet: {snippet}")
+
+        created_at = doc.get("created_at")
+        updated_at = doc.get("updated_at")
+
+        results.append({
+            "id": str(doc["_id"]),
+            "_id": str(doc["_id"]),
+            "title": title,
+            "snippet": snippet,
+            "created_at": created_at.isoformat() if created_at else None,
+            "updated_at": updated_at.isoformat() if updated_at else None,
+            "relevance_score": float(doc.get("score", 1.0)),
+        })
+
+    # ── Step 3: AI summary across found documents ─────────────────────────────
+    ai_summary = None
+    if results and combined_context:
+        try:
+            ai_summary = await ai_service.summarize_search_results(
+                query=q,
+                contexts=combined_context
+            )
+        except Exception as e:
+            logger.warning(f"AI summary for search failed (non-fatal): {e}")
+            ai_summary = None
+
+    return {
+        "query": q,
+        "results": results,
+        "ai_summary": ai_summary,
+        "total": len(results)
+    }
 
 
 # ============================================

@@ -14,7 +14,17 @@ import {
   Square,
   Download,
   X,
+  Youtube,
+  PlayCircle,
+  BookOpen,
+  Layers,
+  Bot,
+  Share2,
+  ExternalLink
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import { youtubeAPI } from '../utils/api';
 import { format } from 'date-fns';
 import { chatAPI } from '../utils/api';
 import { useSocket } from '../contexts/SocketContext';
@@ -44,6 +54,7 @@ const formatDuration = (seconds) => {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 const ChatInterface = ({ room, classroom, user }) => {
+  const navigate = useNavigate();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [showMessageMenu, setShowMessageMenu] = useState(null);
@@ -148,9 +159,7 @@ const ChatInterface = ({ room, classroom, user }) => {
   // ─── Effects ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (initialMessages && initialMessages.length > 0) {
-      setMessages(initialMessages);
-    }
+    setMessages(initialMessages || []);
   }, [JSON.stringify(initialMessages)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -389,22 +398,108 @@ const ChatInterface = ({ room, classroom, user }) => {
               />
             </a>
           ) : (
-            <div className="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg p-2 max-w-xs">
+            <div className="flex items-center space-x-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2 max-w-xs">
               <FileText className="h-8 w-8 text-blue-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{msg.file_name}</p>
-                <p className="text-xs text-gray-400">{formatFileSize(msg.file_size)}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{msg.file_name}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{formatFileSize(msg.file_size)}</p>
               </div>
               <a
                 href={`${BACKEND_URL}${msg.file_url}`}
                 download={msg.file_name}
-                className="text-blue-600 hover:text-blue-800 flex-shrink-0"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex-shrink-0"
                 title="Download"
               >
                 <Download className="h-4 w-4" />
               </a>
             </div>
           )}
+        </div>
+      );
+    }
+
+    if (msg.message_type === 'shared_content') {
+      const renderSharedContent = (sharedContent) => {
+        if (!sharedContent) return null;
+        const contentType = sharedContent.content_type || sharedContent.contentType;
+        const getContentStyle = () => {
+          switch (contentType) {
+            case 'youtube_summary':
+            case 'youtube_video':
+              return { icon: <Youtube className="w-4 h-4 text-red-500" />, bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800', label: 'YouTube Summary' };
+            case 'youtube_session':
+              return { icon: <PlayCircle className="w-4 h-4 text-red-600 dark:text-red-400" />, bgColor: 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/30 dark:to-orange-900/30', borderColor: 'border-red-300 dark:border-red-700', label: 'YouTube Session' };
+            case 'flashcards':
+              return { icon: <BookOpen className="w-4 h-4 text-purple-500" />, bgColor: 'bg-purple-50 dark:bg-purple-900/20', borderColor: 'border-purple-200 dark:border-purple-800', label: 'Flashcards' };
+            case 'slides':
+              return { icon: <Layers className="w-4 h-4 text-blue-500" />, bgColor: 'bg-blue-50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-800', label: 'Slides' };
+            case 'notes':
+              return { icon: <FileText className="w-4 h-4 text-green-500" />, bgColor: 'bg-green-50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-800', label: 'Notes' };
+            case 'ai_chat':
+              return { icon: <Bot className="w-4 h-4 text-indigo-500" />, bgColor: 'bg-indigo-50 dark:bg-indigo-900/20', borderColor: 'border-indigo-200 dark:border-indigo-800', label: 'AI Chat' };
+            default:
+              return { icon: <Share2 className="w-4 h-4 text-gray-500" />, bgColor: 'bg-gray-50 dark:bg-gray-800', borderColor: 'border-gray-200 dark:border-gray-700', label: 'Shared Content' };
+          }
+        };
+
+        const handleImportSession = async () => {
+          if (!sharedContent.source_id) return toast.error('Session ID not available');
+          try {
+            toast.loading('Importing session...', { id: 'import-session' });
+            const response = await youtubeAPI.importSession(sharedContent.source_id);
+            toast.dismiss('import-session');
+            if (response.data.already_owned) {
+              toast.success('Opening your session...');
+              navigate(`/youtube-summarizer?session=${sharedContent.source_id}`);
+            } else if (response.data.already_imported || response.data.imported) {
+              toast.success('Session imported! Opening...');
+              navigate(`/youtube-summarizer?session=${response.data.session_id}`);
+            }
+          } catch (error) {
+            toast.dismiss('import-session');
+            toast.error('Failed to import session');
+          }
+        };
+
+        const style = getContentStyle();
+
+        return (
+          <div className={`rounded-lg border ${style.borderColor} ${style.bgColor} p-3 max-w-xs mb-2`}>
+            {sharedContent.preview_image_url && (
+              <img src={sharedContent.preview_image_url} alt={sharedContent.title} className="w-full h-24 object-cover rounded-lg mb-2" onError={(e) => { e.target.style.display = 'none'; }} />
+            )}
+            <div className="flex items-center gap-2 mb-2">
+              {style.icon}
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{style.label}</span>
+            </div>
+            <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">{sharedContent.title}</h4>
+            {sharedContent.description && <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">{sharedContent.description}</p>}
+            
+            {contentType === 'youtube_session' && sharedContent.source_id && (
+              <Button onClick={handleImportSession} variant="danger" className="w-full mt-2 justify-center" leftIcon={<Download className="w-4 h-4" />}>
+                Import & Open
+              </Button>
+            )}
+            {sharedContent.source_url && contentType !== 'youtube_session' && (
+              <a href={sharedContent.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 mt-2">
+                <ExternalLink className="w-3 h-3" /> View Original
+              </a>
+            )}
+          </div>
+        );
+      };
+      return (
+        <div>
+          {renderSharedContent(msg.shared_content)}
+          {msg.content && <p className="text-sm whitespace-pre-wrap mt-1">{msg.content}</p>}
+        </div>
+      );
+    }
+
+    if (msg.is_ai_response || msg.message_type === 'ai_response' || msg.sender_id === 'AI') {
+      return (
+        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-purple-900/50 prose-pre:text-purple-100">
+          <ReactMarkdown>{msg.content}</ReactMarkdown>
         </div>
       );
     }
@@ -436,11 +531,11 @@ const ChatInterface = ({ room, classroom, user }) => {
       />
 
       {/* Room header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div>
-          <h2 className="text-lg font-medium text-gray-900">{room.name}</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">{room.name}</h2>
           {room.description && (
-            <p className="text-sm text-gray-600">{room.description}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{room.description}</p>
           )}
         </div>
         <div className="flex items-center space-x-2">
@@ -462,8 +557,8 @@ const ChatInterface = ({ room, classroom, user }) => {
         {messages.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No messages yet</h3>
-            <p className="mt-1 text-sm text-gray-500">Start the conversation below</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No messages yet</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Start the conversation below</p>
           </div>
         ) : (
           messages.map((msg) => {
@@ -472,17 +567,30 @@ const ChatInterface = ({ room, classroom, user }) => {
               <div key={msgKey(msg)} className={`flex w-full mb-2 ${own ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-xs lg:max-w-md ${own ? 'items-end' : 'items-start'} flex flex-col`}>
                   {!own && (
-                    <span className="text-xs text-gray-500 mb-1 ml-1">
-                      {msg.sender_name || 'Unknown'}
+                    <span className="text-xs text-gray-500 mb-1 ml-1 flex items-center gap-1">
+                      {msg.is_ai_response || msg.message_type === 'ai_response' || msg.sender_id === 'AI' ? (
+                        <>
+                          <Bot className="w-3 h-3 text-purple-500" />
+                          <span className="text-purple-600 dark:text-purple-400 font-medium">AI Assistant</span>
+                        </>
+                      ) : (
+                        msg.sender_name || 'Unknown'
+                      )}
                     </span>
                   )}
 
                   {msg.deleted ? (
-                    <div className="px-4 py-2 rounded-2xl bg-gray-100 text-gray-400 italic text-sm">
+                    <div className="px-4 py-2 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 italic text-sm">
                       This message was deleted
                     </div>
                   ) : (
-                    <div className={`px-4 py-2 rounded-2xl ${own ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-100 text-gray-900 rounded-bl-none'}`}>
+                    <div className={`px-4 py-2 rounded-2xl ${
+                      msg.is_ai_response || msg.message_type === 'ai_response' || msg.sender_id === 'AI'
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-200 dark:border-gray-700 shadow-sm'
+                        : own
+                          ? 'bg-blue-600 text-white rounded-br-none'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none'
+                    }`}>
                       {renderMessageContent(msg, own)}
                     </div>
                   )}
@@ -521,22 +629,22 @@ const ChatInterface = ({ room, classroom, user }) => {
 
       {/* Edit bar */}
       {editingMessage && (
-        <div className="px-4 py-2 border-t border-yellow-200 bg-yellow-50 flex items-center space-x-2">
+        <div className="px-4 py-2 border-t border-yellow-200 dark:border-yellow-900/40 bg-yellow-50 dark:bg-yellow-900/20 flex items-center space-x-2">
           <input
             type="text"
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingMessage(null); }}
-            className="flex-1 text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none"
+            className="flex-1 text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             autoFocus
           />
           <button onClick={handleSaveEdit} className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
-          <button onClick={() => setEditingMessage(null)} className="text-sm px-2 py-1 text-gray-500 hover:text-gray-700"><X className="h-4 w-4" /></button>
+          <button onClick={() => setEditingMessage(null)} className="text-sm px-2 py-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><X className="h-4 w-4" /></button>
         </div>
       )}
 
       {/* Message input */}
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
 
           {/* File upload button */}
@@ -544,7 +652,7 @@ const ChatInterface = ({ room, classroom, user }) => {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading || isRecording}
-            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-40 transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-40 transition-colors"
             title="Attach file"
           >
             {isUploading
@@ -555,13 +663,13 @@ const ChatInterface = ({ room, classroom, user }) => {
 
           {/* Voice note button / recording indicator */}
           {isRecording ? (
-            <div className="flex items-center space-x-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-full">
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-full">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-sm text-red-600 font-medium tabular-nums">{formatDuration(recordingTime)}</span>
+              <span className="text-sm text-red-600 dark:text-red-400 font-medium tabular-nums">{formatDuration(recordingTime)}</span>
               <button
                 type="button"
                 onClick={stopRecording}
-                className="text-red-600 hover:text-red-800"
+                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                 title="Stop recording"
               >
                 <Square className="h-4 w-4 fill-current" />
@@ -572,7 +680,7 @@ const ChatInterface = ({ room, classroom, user }) => {
               type="button"
               onMouseDown={startRecording}
               disabled={isUploading}
-              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-40 transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-40 transition-colors"
               title="Hold to record voice note"
             >
               <Mic className="h-5 w-5" />
@@ -609,18 +717,17 @@ const ChatInterface = ({ room, classroom, user }) => {
             className="fixed inset-0 z-50 overflow-y-auto"
           >
             <div className="flex min-h-screen items-center justify-center p-4">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowSummary(false)} />
-              <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              <div className="fixed inset-0 bg-black bg-opacity-60" onClick={() => setShowSummary(false)} />
+              <div className="relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">Chat Summary</h3>
-                    <Button
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Chat Summary</h3>
+                    <button
                       onClick={() => setShowSummary(false)}
-                      variant="ghost"
-                      className="text-gray-400 hover:text-gray-600 h-auto p-1"
+                      className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                      ×
-                    </Button>
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {isLoadingSummary ? (

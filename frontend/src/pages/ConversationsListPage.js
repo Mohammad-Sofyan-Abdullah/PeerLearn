@@ -64,12 +64,12 @@ const ConversationsListPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Messages</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             {user?.role === 'teacher' 
               ? 'Chat with your students' 
               : 'Chat with teachers and friends'}
@@ -84,25 +84,25 @@ const ConversationsListPage = () => {
             placeholder="Search conversations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
         </div>
 
         {/* Conversations List */}
         {filteredConversations.length === 0 ? (
-          <div className="bg-white shadow rounded-lg p-12 text-center">
-            <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-12 text-center">
+            <MessageSquare className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No conversations yet
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               {user?.role === 'teacher' 
                 ? 'Students will appear here once they message you' 
                 : 'Start a conversation by messaging a teacher'}
             </p>
           </div>
         ) : (
-          <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
             {filteredConversations.map((conversation) => {
               const otherUser = conversation.other_user;
               const hasUnread = conversation.unread_count > 0;
@@ -111,8 +111,8 @@ const ConversationsListPage = () => {
                 <div
                   key={conversation.id}
                   onClick={() => handleConversationClick(conversation)}
-                  className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                    hasUnread ? 'bg-indigo-50' : ''
+                  className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
+                    hasUnread ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -135,11 +135,11 @@ const ConversationsListPage = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <h3 className={`text-sm font-semibold truncate ${
-                          hasUnread ? 'text-gray-900' : 'text-gray-700'
+                          hasUnread ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200'
                         }`}>
                           {otherUser?.full_name || otherUser?.name || 'Unknown User'}
                         </h3>
-                        <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
                           {formatTimestamp(conversation.last_message_timestamp)}
                         </span>
                       </div>
@@ -153,7 +153,7 @@ const ConversationsListPage = () => {
 
                       <div className="flex items-center justify-between">
                         <p className={`text-sm truncate ${
-                          hasUnread ? 'font-medium text-gray-900' : 'text-gray-600'
+                          hasUnread ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'
                         }`}>
                           {conversation.last_message_content || 'No messages yet'}
                         </p>

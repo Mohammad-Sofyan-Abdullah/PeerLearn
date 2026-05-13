@@ -83,8 +83,8 @@ export default function TeacherDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-500">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="text-xl text-gray-500 dark:text-gray-400">Loading...</div>
       </div>
     );
   }
@@ -92,19 +92,19 @@ export default function TeacherDashboardPage() {
   // ── Profile incomplete gate (just registered, haven't set up profile yet)
   if (profile && profile.status === 'profile_incomplete') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 max-w-md w-full p-8 text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="h-8 w-8 text-blue-600" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-md w-full p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Complete Your Teacher Profile</h2>
-          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Complete Your Teacher Profile</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
             Welcome! Before you can start teaching, please fill in your profile details.
             Once submitted, our admin team will review and approve your application.
           </p>
           <Link
             to="/teacher/profile/edit"
-            className="inline-block w-full py-3 px-4 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+            className="inline-block w-full py-3 px-4 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-colors"
           >
             Set Up My Profile
           </Link>
@@ -116,13 +116,13 @@ export default function TeacherDashboardPage() {
   // ── Pending approval gate ─────────────────────────────────────────────────
   if (profile && profile.status === 'pending') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 max-w-md w-full p-8 text-center">
-          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Clock className="h-8 w-8 text-amber-600" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 max-w-md w-full p-8 text-center">
+          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Clock className="h-8 w-8 text-amber-600 dark:text-amber-400" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Application Under Review</h2>
-          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Application Under Review</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
             Your teacher application has been submitted and is being reviewed by our admin team.
             You'll receive an email once your profile is approved.
           </p>
@@ -175,25 +175,25 @@ export default function TeacherDashboardPage() {
 
   // ── Full dashboard (approved) ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               {profile?.profile_picture && (
                 <img src={profile.profile_picture} alt="Profile" className="h-16 w-16 rounded-full object-cover" />
               )}
               <div className="ml-4">
-                <h1 className="text-2xl font-bold text-gray-900">{profile?.full_name || user?.name}</h1>
-                <p className="text-sm text-gray-600">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile?.full_name || user?.name}</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Status:{' '}
-                  <span className="font-semibold text-green-600">Approved</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">Approved</span>
                 </p>
               </div>
             </div>
-            <Link to="/teacher/profile/edit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+            <Link to="/teacher/profile/edit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-colors font-medium">
               Edit Profile
             </Link>
           </div>
@@ -202,37 +202,37 @@ export default function TeacherDashboardPage() {
         {/* Analytics Cards */}
         {analytics && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="text-sm text-gray-600">Total Students</div>
-              <div className="text-3xl font-bold text-gray-900">{analytics.total_students}</div>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total Students</div>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">{analytics.total_students}</div>
             </div>
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="text-sm text-gray-600">Total Sessions</div>
-              <div className="text-3xl font-bold text-gray-900">{analytics.total_sessions}</div>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total Sessions</div>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">{analytics.total_sessions}</div>
             </div>
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="text-sm text-gray-600">Average Rating</div>
-              <div className="text-3xl font-bold text-gray-900">{analytics.average_rating.toFixed(1)} ⭐</div>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Average Rating</div>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">{analytics.average_rating.toFixed(1)} ⭐</div>
             </div>
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="text-sm text-gray-600">Pending Requests</div>
-              <div className="text-3xl font-bold text-indigo-600">{analytics.pending_requests}</div>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Pending Requests</div>
+              <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{analytics.pending_requests}</div>
             </div>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="bg-white shadow rounded-lg mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex -mb-px overflow-x-auto">
               {['overview', 'requests', 'sessions', 'freeMaterials', 'reviews'].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-6 text-sm font-medium capitalize ${
+                  className={`py-4 px-6 text-sm font-medium capitalize whitespace-nowrap transition-colors ${
                     activeTab === tab
-                      ? 'border-b-2 border-indigo-500 text-indigo-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                      : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                   }`}
                 >
                   {tab === 'requests' ? `Hire Requests (${requests.filter(r => r.status === 'pending').length})`
@@ -247,17 +247,17 @@ export default function TeacherDashboardPage() {
           <div className="p-6">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-              <div className="space-y-6">
+              <div className="space-y-6 dark:text-gray-100">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                   {requests.length === 0 && sessions.length === 0 ? (
-                    <p className="text-gray-600">No recent activity</p>
+                    <p className="text-gray-600 dark:text-gray-400">No recent activity</p>
                   ) : (
                     <div className="space-y-4">
                       {requests.slice(0, 3).map((request) => (
                         <div key={request.id} className="border-l-4 border-indigo-500 pl-4 py-2">
-                          <p className="font-medium">New hire request from {request.student.name}</p>
-                          <p className="text-sm text-gray-600">Subject: {request.subject} • ${request.total_price}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">New hire request from {request.student.name}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Subject: {request.subject} • ${request.total_price}</p>
                         </div>
                       ))}
                     </div>
@@ -271,10 +271,10 @@ export default function TeacherDashboardPage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold mb-4">Hire Requests</h3>
                 {requests.length === 0 ? (
-                  <p className="text-gray-600">No hire requests yet</p>
+                  <p className="text-gray-600 dark:text-gray-400">No hire requests yet</p>
                 ) : (
                   requests.map((request) => (
-                    <div key={request.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div key={request.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
@@ -318,12 +318,12 @@ export default function TeacherDashboardPage() {
             {/* Sessions Tab */}
             {activeTab === 'sessions' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold mb-4">Teaching Sessions</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Teaching Sessions</h3>
                 {sessions.length === 0 ? (
-                  <p className="text-gray-600">No sessions scheduled yet</p>
+                  <p className="text-gray-600 dark:text-gray-400">No sessions scheduled yet</p>
                 ) : (
                   sessions.map((session) => (
-                    <div key={session.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div key={session.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
@@ -363,15 +363,15 @@ export default function TeacherDashboardPage() {
               <div className="space-y-6">
 
                 {/* ADD MATERIAL FORM — always visible */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Add Free Resource</h3>
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Add Free Resource</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Resource Type</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Resource Type</label>
                       <select
                         value={newMaterial.type}
                         onChange={e => setNewMaterial(prev => ({...prev, type: e.target.value}))}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                       >
                         <option value="video_link">🎥 Video Link (YouTube, Vimeo)</option>
                         <option value="pdf_link">📄 PDF Link (Google Drive, Dropbox)</option>
@@ -380,31 +380,31 @@ export default function TeacherDashboardPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Title</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Title</label>
                       <input
                         value={newMaterial.title}
                         onChange={e => setNewMaterial(prev => ({...prev, title: e.target.value}))}
                         placeholder="e.g. Introduction to Calculus"
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">URL / Link</label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">URL / Link</label>
                       <input
                         value={newMaterial.url}
                         onChange={e => setNewMaterial(prev => ({...prev, url: e.target.value}))}
                         placeholder="https://..."
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Description <span className="text-gray-400 font-normal">(optional)</span></label>
                       <textarea
                         value={newMaterial.description}
                         onChange={e => setNewMaterial(prev => ({...prev, description: e.target.value}))}
                         placeholder="Briefly describe what students will learn from this resource..."
                         rows={2}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
                       />
                     </div>
                   </div>
@@ -412,7 +412,7 @@ export default function TeacherDashboardPage() {
                     <button
                       onClick={handleAddMaterial}
                       disabled={!newMaterial.title.trim() || !newMaterial.url.trim() || addingMaterial}
-                      className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                      className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 dark:hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
                     >
                       <span>{addingMaterial ? 'Adding...' : '+ Add Resource'}</span>
                     </button>
@@ -421,17 +421,17 @@ export default function TeacherDashboardPage() {
 
                 {/* MATERIALS LIST */}
                 <div className="space-y-3">
-                  <h3 className="text-base font-semibold text-gray-900">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                     Your Free Resources ({(profile?.free_materials || []).length})
                   </h3>
                   {(profile?.free_materials || []).length === 0 ? (
-                    <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-8 text-center">
-                      <p className="text-sm font-medium text-gray-700">No free resources yet</p>
-                      <p className="text-xs text-gray-400 mt-1">Add videos, PDFs, or notes above to show students your teaching style</p>
+                    <div className="bg-gray-50 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No free resources yet</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add videos, PDFs, or notes above to show students your teaching style</p>
                     </div>
                   ) : (
                     (profile?.free_materials || []).map((material, index) => (
-                      <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 flex items-start justify-between hover:border-blue-200 transition-colors">
+                      <div key={index} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-start justify-between hover:border-blue-200 dark:hover:border-blue-600 transition-colors">
                         <div className="flex items-start space-x-3">
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-100">
                             <span className="text-lg">
@@ -439,8 +439,8 @@ export default function TeacherDashboardPage() {
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900">{material.title}</p>
-                            {material.description && <p className="text-xs text-gray-500 mt-0.5">{material.description}</p>}
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{material.title}</p>
+                            {material.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{material.description}</p>}
                             <a href={material.url} target="_blank" rel="noopener noreferrer"
                               className="text-xs text-blue-600 hover:text-blue-800 mt-1 block truncate max-w-md">
                               {material.url}
@@ -464,19 +464,19 @@ export default function TeacherDashboardPage() {
             {/* Reviews Tab */}
             {activeTab === 'reviews' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold mb-4">My Reviews ({myReviews.length})</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">My Reviews ({myReviews.length})</h3>
                 {myReviews.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="w-14 h-14 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <div className="w-14 h-14 bg-yellow-50 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Star className="h-6 w-6 text-yellow-400" />
                     </div>
-                    <p className="text-gray-700 font-medium">No reviews yet</p>
-                    <p className="text-sm text-gray-500 mt-1">Reviews appear here after students complete sessions with you.</p>
+                    <p className="text-gray-700 dark:text-gray-300 font-medium">No reviews yet</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Reviews appear here after students complete sessions with you.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {myReviews.map((review, i) => (
-                      <div key={review.id || i} className="bg-white border border-gray-200 rounded-xl p-5">
+                      <div key={review.id || i} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
                             {review.student_avatar ? (
@@ -487,7 +487,7 @@ export default function TeacherDashboardPage() {
                               </div>
                             )}
                             <div>
-                              <p className="text-sm font-semibold text-gray-900">{review.student_name || 'Anonymous'}</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white">{review.student_name || 'Anonymous'}</p>
                               <p className="text-xs text-gray-400">{review.created_at ? new Date(review.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</p>
                             </div>
                           </div>
@@ -498,7 +498,7 @@ export default function TeacherDashboardPage() {
                           </div>
                         </div>
                         {review.comment && (
-                          <p className="text-sm text-gray-700 mt-3 leading-relaxed">{review.comment}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-3 leading-relaxed">{review.comment}</p>
                         )}
                       </div>
                     ))}

@@ -459,22 +459,22 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
     return (
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="border-b border-gray-200 p-6">
+        <div className="border-b border-gray-200 dark:border-gray-700/60 p-6 bg-white dark:bg-gray-900">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-red-100 rounded-lg">
                 <Youtube className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">YouTube Summarizer</h1>
-                <p className="text-sm text-gray-600">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">YouTube Summarizer</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Turn any YouTube video into structured summaries and interactive Q&A
                 </p>
               </div>
             </div>
 
             {/* Sidebar Toggle Button */}
-            <div className="bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors group">
+            <div className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors group">
               <Button
                 variant="ghost"
                 size="sm"
@@ -484,9 +484,9 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                 className="p-2 h-auto"
               >
                 {isSidebarOpen ? (
-                  <X className="h-5 w-5 text-gray-600 group-hover:text-gray-800" />
+                  <X className="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-white" />
                 ) : (
-                  <Menu className="h-5 w-5 text-gray-600 group-hover:text-gray-800" />
+                  <Menu className="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-white" />
                 )}
               </Button>
             </div>
@@ -497,20 +497,20 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-md w-full">
             <div className="text-center mb-8">
-              <div className="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
                 <PlayCircle className="h-10 w-10 text-red-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 Get Started with YouTube Summarizer
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Paste a YouTube video URL to generate comprehensive summaries and chat with the content
               </p>
             </div>
 
             <form onSubmit={handleVideoSubmit} className="space-y-4">
               <div>
-                <label htmlFor="videoUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="videoUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   YouTube Video URL
                 </label>
                 <input
@@ -519,7 +519,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   disabled={isProcessing}
                 />
               </div>
@@ -537,12 +537,12 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
             </form>
 
             {isProcessing && (
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900">Processing your video...</p>
-                    <p className="text-xs text-blue-700">This may take a few minutes depending on video length</p>
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Processing your video...</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">This may take a few minutes depending on video length</p>
                     <div className="mt-2 text-xs text-blue-600">
                       <div>Step 1: Downloading audio...</div>
                       <div>Step 2: Transcribing content...</div>
@@ -581,17 +581,17 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
   return (
     <div className="flex-1 flex flex-col h-full relative">
       {/* Header */}
-      <div className="border-b border-gray-200 p-4">
+      <div className="border-b border-gray-200 dark:border-gray-700/60 p-4 bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg flex-shrink-0">
               <Youtube className="h-5 w-5 text-red-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-semibold text-gray-900 truncate">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                 {selectedSession.video_title}
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Duration: {formatDuration(selectedSession.video_duration)} •
                 Created: {new Date(selectedSession.created_at).toLocaleDateString()}
               </p>
@@ -600,7 +600,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
 
           {/* Sidebar Toggle Button */}
           {/* Sidebar Toggle Button */}
-          <div className="bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors group">
+          <div className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors group">
             <Button
               variant="ghost"
               size="sm"
@@ -610,9 +610,9 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
               className="p-2 h-auto"
             >
               {isSidebarOpen ? (
-                <X className="h-5 w-5 text-gray-600 group-hover:text-gray-800" />
+                <X className="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-white" />
               ) : (
-                <Menu className="h-5 w-5 text-gray-600 group-hover:text-gray-800" />
+                <Menu className="h-5 w-5 text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-white" />
               )}
             </Button>
           </div>
@@ -640,11 +640,11 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
               </Button>
 
               {showExportMenu && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                   <Button
                     onClick={() => handleExport('pdf')}
                     variant="ghost"
-                    className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 h-auto rounded-none"
+                    className="w-full justify-start px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 h-auto rounded-none"
                     leftIcon={<FileText className="h-4 w-4" />}
                   >
                     Export as PDF
@@ -652,7 +652,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                   <Button
                     onClick={() => handleExport('docx')}
                     variant="ghost"
-                    className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 h-auto rounded-none"
+                    className="w-full justify-start px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 h-auto rounded-none"
                     leftIcon={<FileText className="h-4 w-4" />}
                   >
                     Export as DOCX
@@ -660,7 +660,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                   <Button
                     onClick={() => handleExport('markdown')}
                     variant="ghost"
-                    className="w-full justify-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 h-auto rounded-none"
+                    className="w-full justify-start px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 h-auto rounded-none"
                     leftIcon={<FileText className="h-4 w-4" />}
                   >
                     Export as Markdown
@@ -697,13 +697,13 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
       {/* Content */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Tabs */}
-        <div className="border-b border-gray-200 bg-white">
+        <div className="border-b border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-900">
           <div className="flex space-x-1 p-2">
             <button
               onClick={() => setActiveTab('chat')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'chat'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <MessageSquare size={18} />
@@ -712,8 +712,8 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
             <button
               onClick={() => setActiveTab('summaries')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'summaries'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <Layers size={18} />
@@ -722,8 +722,8 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
             <button
               onClick={() => setActiveTab('flashcards')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'flashcards'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <BookOpen size={18} />
@@ -737,8 +737,8 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
             <button
               onClick={() => setActiveTab('slides')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'slides'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <Presentation size={18} />
@@ -747,8 +747,8 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
             <button
               onClick={() => setActiveTab('related-videos')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'related-videos'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
             >
               <TrendingUp size={18} />
@@ -769,16 +769,16 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
             <div className="flex-1 flex">
               {/* Summaries Sidebar - Show in chat tab when sidebar is closed */}
               {!isSidebarOpen && (
-                <div className="w-1/3 min-w-96 border-r border-gray-200 flex flex-col">
-                  <div className="p-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">Summaries</h2>
+                <div className="w-1/3 min-w-96 border-r border-gray-200 dark:border-gray-700/60 flex flex-col bg-white dark:bg-gray-900">
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-700/60">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Summaries</h2>
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     {/* Short Summary */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-gray-900">Quick Summary</h3>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Quick Summary</h3>
                         <button
                           onClick={() => copyToClipboard(selectedSession.short_summary)}
                           className="p-1 text-gray-400 hover:text-gray-600"
@@ -786,7 +786,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                           <Copy className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="prose prose-sm max-w-none text-sm text-gray-700">
+                      <div className="prose prose-sm max-w-none text-sm text-gray-700 dark:text-gray-300">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {selectedSession.short_summary}
                         </ReactMarkdown>
@@ -796,7 +796,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                     {/* Detailed Summary */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-gray-900">Detailed Summary</h3>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Detailed Summary</h3>
                         <button
                           onClick={() => copyToClipboard(selectedSession.detailed_summary)}
                           className="p-1 text-gray-400 hover:text-gray-600"
@@ -804,7 +804,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                           <Copy className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="prose prose-sm max-w-none text-sm text-gray-700">
+                      <div className="prose prose-sm max-w-none text-sm text-gray-700 dark:text-gray-300">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {selectedSession.detailed_summary}
                         </ReactMarkdown>
@@ -829,7 +829,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                         <div
                           className={`max-w-3xl rounded-lg px-4 py-3 ${message.role === 'user'
                             ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                             }`}
                         >
                           <div className="text-sm prose prose-sm max-w-none">
@@ -849,13 +849,13 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                   ) : (
                     <div className="flex-1 flex items-center justify-center">
                       <div className="text-center">
-                        <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
                           <Send className="h-8 w-8 text-gray-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                           Start asking questions
                         </h3>
-                        <p className="text-gray-500 max-w-sm">
+                        <p className="text-gray-500 dark:text-gray-400 max-w-sm">
                           Ask any question about the video content and get detailed answers based on the transcript.
                         </p>
                       </div>
@@ -865,14 +865,14 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                 </div>
 
                 {/* Input */}
-                <div className="border-t border-gray-200 p-4">
+                <div className="border-t border-gray-200 dark:border-gray-700/60 p-4 bg-white dark:bg-gray-900">
                   <form onSubmit={handleQuestionSubmit} className="flex space-x-3">
                     <input
                       type="text"
                       value={currentQuestion}
                       onChange={(e) => setCurrentQuestion(e.target.value)}
                       placeholder="Ask a question about the video..."
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                       disabled={chatMutation.isLoading}
                     />
                     <button
@@ -897,9 +897,9 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
             <div className="flex-1 overflow-y-auto p-8">
               <div className="max-w-4xl mx-auto space-y-8">
                 {/* Short Summary */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Quick Summary</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Quick Summary</h2>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleShareSummary}
@@ -918,7 +918,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                       </button>
                     </div>
                   </div>
-                  <div className="prose prose-base max-w-none text-gray-700">
+                  <div className="prose prose-base max-w-none text-gray-700 dark:text-gray-300">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {selectedSession.short_summary}
                     </ReactMarkdown>
@@ -926,9 +926,9 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                 </div>
 
                 {/* Detailed Summary */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Detailed Summary</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Detailed Summary</h2>
                     <button
                       onClick={() => copyToClipboard(selectedSession.detailed_summary)}
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -936,7 +936,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                       <Copy className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="prose prose-base max-w-none text-gray-700">
+                  <div className="prose prose-base max-w-none text-gray-700 dark:text-gray-300">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {selectedSession.detailed_summary}
                     </ReactMarkdown>
@@ -948,17 +948,17 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
 
           {/* Flashcards Tab */}
           {activeTab === 'flashcards' && (
-            <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
               <div className="max-w-4xl mx-auto">
                 {flashcards.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-6">
                       <BookOpen className="h-10 w-10 text-purple-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                       Generate Flashcards
                     </h2>
-                    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                    <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
                       AI will create high-quality flashcards based on the concepts explained in this video. The number of cards will be optimized for learning quality.
                     </p>
                     <motion.button
@@ -984,10 +984,10 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                 ) : (
                   <div className="space-y-6">
                     <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                         Study Flashcards
                       </h2>
-                      <p className="text-gray-600 mb-4">
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
                         Review the key concepts from this video
                       </p>
                       <button
@@ -1026,16 +1026,16 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
 
           {/* Slides Tab */}
           {activeTab === 'slides' && (
-            <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-8 bg-gray-50 dark:bg-gray-950">
               <div className="max-w-4xl mx-auto text-center">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-                  <div className="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+                  <div className="mx-auto w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
                     <Presentation className="h-10 w-10 text-blue-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                     Visual Slides
                   </h2>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
                     Generate visual slides with diagrams to present this content. The AI will create a structured presentation with generated images.
                   </p>
 
@@ -1045,7 +1045,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                       {selectedSession.generated_slide_images && selectedSession.generated_slide_images.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                           {selectedSession.generated_slide_images.map((imgUrl, index) => (
-                            <div key={index} className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden shadow-md border hover:shadow-lg transition-shadow">
+                            <div key={index} className="relative aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-shadow">
                               <img
                                 src={`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${imgUrl}`}
                                 alt={`Slide ${index + 1}`}
@@ -1075,7 +1075,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                         <button
                           onClick={handleGenerateSlides}
                           disabled={isGeneratingSlides}
-                          className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                          className="px-6 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
                         >
                           <RefreshCw className={`h-5 w-5 ${isGeneratingSlides ? 'animate-spin' : ''}`} />
                           Regenerate
@@ -1103,7 +1103,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                   )}
 
                   {(isGeneratingSlides || selectedSession.slides_status === 'processing') && (
-                    <p className="text-sm text-gray-500 mt-4 animate-pulse">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 animate-pulse">
                       We are generating images for your slides. This process runs in the background. Note: Large videos may take a few minutes.
                     </p>
                   )}
@@ -1113,17 +1113,17 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
           )}
           {/* Related Videos Tab */}
           {activeTab === 'related-videos' && (
-            <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
               <div className="max-w-6xl mx-auto">
                 {(relatedVideos.length === 0 && (!selectedSession?.related_videos || selectedSession.related_videos.length === 0)) ? (
                   <div className="text-center py-12">
                     <div className="mx-auto w-20 h-20 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mb-6">
                       <TrendingUp className="h-10 w-10 text-red-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                       Discover Related Videos
                     </h2>
-                    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                    <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
                       Get AI-curated YouTube video suggestions to deepen your understanding and prepare for exams. Perfect for comprehensive learning.
                     </p>
                     <motion.button
@@ -1152,10 +1152,10 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                 ) : (
                   <div className="space-y-6">
                     <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                         Related Videos for Further Study
                       </h2>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 dark:text-gray-400">
                         AI-curated video suggestions to enhance your learning journey
                       </p>
                     </div>
@@ -1167,12 +1167,12 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.1 }}
-                          className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-200 overflow-hidden"
+                          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 overflow-hidden"
                         >
                           <div className="p-6">
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center space-x-2">
-                                <div className="p-2 bg-red-100 rounded-lg">
+                                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                                   <PlayCircle className="h-4 w-4 text-red-600" />
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -1189,15 +1189,15 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                               </div>
                             </div>
 
-                            <h3 className="font-semibold text-gray-900 mb-3 line-clamp-2 leading-tight">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 line-clamp-2 leading-tight">
                               {video.title}
                             </h3>
 
-                            <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
                               {video.description}
                             </p>
 
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-4">
                               <div className="flex items-center space-x-1">
                                 <Clock className="h-3 w-3" />
                                 <span>{video.estimated_duration}</span>
@@ -1208,9 +1208,9 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                               </div>
                             </div>
 
-                            <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                              <p className="text-xs text-blue-800 font-medium mb-1">Why this helps:</p>
-                              <p className="text-xs text-blue-700 line-clamp-2">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
+                              <p className="text-xs text-blue-800 dark:text-blue-300 font-medium mb-1">Why this helps:</p>
+                              <p className="text-xs text-blue-700 dark:text-blue-400 line-clamp-2">
                                 {video.why_relevant}
                               </p>
                             </div>

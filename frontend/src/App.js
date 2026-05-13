@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -35,6 +36,7 @@ import MyHireRequestsPage from './pages/MyHireRequestsPage';
 import TeacherSessionsPage from './pages/TeacherSessionsPage';
 import TeacherReviewsPage from './pages/TeacherReviewsPage';
 import StudentSessionsPage from './pages/StudentSessionsPage';
+import TeacherResearchPage from './pages/TeacherResearchPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ResourcesPage from './pages/ResourcesPage';
@@ -51,9 +53,10 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SocketProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <SocketProvider>
           <Router>
             <div className="App">
               <Routes>
@@ -99,6 +102,7 @@ function App() {
                   <Route path="marketplace" element={<MarketplacePage />} />
                   <Route path="earnings" element={<TeacherDashboardPage />} />
                   <Route path="reviews" element={<TeacherReviewsPage />} />
+                  <Route path="research" element={<TeacherResearchPage />} />
                 </Route>
 
                 {/* Student Routes with Student Layout */}
@@ -165,9 +169,10 @@ function App() {
               />
             </div>
           </Router>
-        </SocketProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+          </SocketProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

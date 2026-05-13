@@ -205,8 +205,8 @@ const ProfilePage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white\">Profile</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Manage your profile information and preferences
           </p>
         </div>
@@ -255,13 +255,13 @@ const ProfilePage = () => {
                 )}
               </div>
 
-              <h2 className="text-xl font-semibold text-gray-900 mb-1">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                 {user.name}
               </h2>
-              <p className="text-sm text-gray-600 mb-4">{user.email}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{user.email}</p>
 
               {user.student_id && (
-                <div className="flex items-center justify-center text-sm text-gray-500 mb-4">
+                <div className="flex items-center justify-center text-sm text-gray-500 dark:text-gray-400 mb-4">
                   <GraduationCap className="h-4 w-4 mr-1" />
                   {user.student_id}
                 </div>
@@ -269,16 +269,16 @@ const ProfilePage = () => {
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Learning Streak:</span>
-                  <span className="font-medium">{user.learning_streaks || 0} days</span>
+                  <span className="text-gray-600 dark:text-gray-400">Learning Streak:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{user.learning_streaks || 0} days</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Friends:</span>
-                  <span className="font-medium">{user.friends?.length || 0}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Friends:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{user.friends?.length || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Member since:</span>
-                  <span className="font-medium">
+                  <span className="text-gray-600 dark:text-gray-400">Member since:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
                     {new Date(user.created_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -291,13 +291,13 @@ const ProfilePage = () => {
         <div className="lg:col-span-2">
           <div className="card">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Profile Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Profile Information</h3>
             </div>
             <div className="card-content">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Name */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Full Name
                   </label>
                   {isEditing ? (
@@ -311,18 +311,18 @@ const ProfilePage = () => {
                       required
                     />
                   ) : (
-                    <p className="mt-1 text-sm text-gray-900">{user.name}</p>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">{user.name}</p>
                   )}
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Email Address
                   </label>
                   <div className="mt-1 flex items-center">
                     <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                    <p className="text-sm text-gray-900">{user.email}</p>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">{user.email}</p>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
                     Email cannot be changed. Contact support if needed.
@@ -345,7 +345,7 @@ const ProfilePage = () => {
                       placeholder="Tell us about yourself..."
                     />
                   ) : (
-                    <p className="mt-1 text-sm text-gray-900">
+                    <p className="mt-1 text-sm text-gray-900 dark:text-gray-100">
                       {user.bio || 'No bio provided'}
                     </p>
                   )}
@@ -438,7 +438,7 @@ const ProfilePage = () => {
           {/* ── Connected Accounts ── */}
           <div className="card mt-6">
             <div className="card-header">
-              <h3 className="text-lg font-medium text-gray-900">Connected Accounts</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Connected Accounts</h3>
               <p className="text-sm text-gray-500 mt-0.5">
                 Connect Google to enable automatic Meet links when teachers approve your session requests.
               </p>

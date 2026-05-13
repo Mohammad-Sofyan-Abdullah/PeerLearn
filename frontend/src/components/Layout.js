@@ -16,11 +16,13 @@ import {
   ShoppingBag,
   Calendar,
   Library,
-  // Settings // Removed unused import
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
-import { friendsAPI, messagesAPI } from '../utils/api';
+import { useTheme } from '../contexts/ThemeContext';
+import { friendsAPI } from '../utils/api';
 import LoadingSpinner from './LoadingSpinner';
 import Button from './Button';
 
@@ -28,30 +30,28 @@ const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout, isLoading } = useAuth();
   const { connected } = useSocket();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const isImmersive = location.pathname.includes('/notes/session') || location.pathname === '/youtube-summarizer';
+  const isFullHeight = isImmersive || location.pathname.startsWith('/messages/') || location.pathname.startsWith('/classroom/') || location.pathname.startsWith('/resources');
+  const isFullWidth = location.pathname === '/marketplace' || location.pathname.startsWith('/notes');
 
   // Fetch friend requests count
   const { data: friendRequests = [] } = useQuery(
     'friend-requests-count',
     () => friendsAPI.getFriendRequests().then(res => res.data),
     {
-      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchInterval: 30000,
       enabled: !!user
     }
   );
 
-  // Fetch unread messages count (you'll need to add this endpoint)
   const { data: unreadCount = 0 } = useQuery(
     'unread-messages-count',
-    async () => {
-      // For now, we'll estimate by checking if there are new messages
-      // You can add a proper unread count endpoint later
-      return 0; // Placeholder - will be updated with actual logic
-    },
+    async () => 0,
     {
-      refetchInterval: 10000, // Refetch every 10 seconds
+      refetchInterval: 10000,
       enabled: !!user
     }
   );
@@ -76,7 +76,6 @@ const Layout = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  // Get notification count for a specific nav item
   const getNotificationCount = (itemName) => {
     if (itemName === 'Messages') return unreadCount;
     if (itemName === 'Friend Requests') return friendRequests.length;
@@ -85,14 +84,14 @@ const Layout = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className={`bg-gray-50 ${isImmersive ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+    <div className={`bg-gray-50 dark:bg-gray-950 ${isFullHeight ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       {/* Mobile sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -102,12 +101,12 @@ const Layout = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 lg:hidden"
           >
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+            <div className="fixed inset-0 bg-gray-600/75 dark:bg-gray-900/80" onClick={() => setSidebarOpen(false)} />
             <motion.div
               initial={{ x: -300 }}
               animate={{ x: 0 }}
               exit={{ x: -300 }}
-              className="relative flex w-full max-w-xs flex-1 flex-col bg-white"
+              className="relative flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-gray-900 shadow-xl"
             >
               <div className="absolute top-0 right-0 -mr-12 pt-2">
                 <button
@@ -118,10 +117,10 @@ const Layout = () => {
                   <X className="h-6 w-6 text-white" />
                 </button>
               </div>
-              <div className="flex flex-shrink-0 items-center px-4 py-4">
+              <div className="flex flex-shrink-0 items-center px-4 py-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center">
                   <BookOpen className="h-8 w-8 text-primary-600" />
-                  <span className="ml-2 text-xl font-bold text-gray-900">PeerLearn</span>
+                  <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">PeerLearn</span>
                 </div>
               </div>
               <div className="mt-5 h-0 flex-1 overflow-y-auto">
@@ -136,9 +135,9 @@ const Layout = () => {
                           setSidebarOpen(false);
                         }}
                         className={`${isActive(item.href)
-                          ? 'bg-primary-100 text-primary-900'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                          } group flex w-full items-center rounded-md px-2 py-2 text-base font-medium relative`}
+                          ? 'bg-primary-100 text-primary-900 dark:bg-primary-900/30 dark:text-primary-300'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
+                          } group flex w-full items-center rounded-md px-2 py-2 text-base font-medium relative transition-colors`}
                       >
                         <Icon className="mr-4 h-6 w-6 flex-shrink-0" />
                         {item.name}
@@ -159,15 +158,15 @@ const Layout = () => {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex min-h-0 flex-1 flex-col bg-white shadow-lg">
+        <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-gray-900 shadow-lg dark:shadow-gray-900/50 border-r border-gray-200 dark:border-gray-700/60">
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
-            <div className="flex flex-shrink-0 items-center px-4">
+            <div className="flex flex-shrink-0 items-center px-4 pb-3 border-b border-gray-200 dark:border-gray-700/60">
               <div className="flex items-center">
                 <BookOpen className="h-8 w-8 text-primary-600" />
-                <span className="ml-2 text-xl font-bold text-gray-900">PeerLearn</span>
+                <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">PeerLearn</span>
               </div>
             </div>
-            <nav className="mt-5 flex-1 space-y-1 bg-white px-2">
+            <nav className="mt-5 flex-1 space-y-1 px-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -175,11 +174,11 @@ const Layout = () => {
                     key={item.name}
                     onClick={() => navigate(item.href)}
                     className={`${isActive(item.href)
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium relative`}
+                      ? 'bg-primary-100 text-primary-900 dark:bg-primary-900/30 dark:text-primary-300'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium relative transition-colors`}
                   >
-                    <Icon className="mr-3 h-6 w-6 flex-shrink-0" />
+                    <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                     {item.name}
                     {getNotificationCount(item.name) > 0 && (
                       <span className="ml-auto inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
@@ -191,17 +190,21 @@ const Layout = () => {
               })}
             </nav>
           </div>
-          <div className="flex flex-shrink-0 border-t border-gray-200 p-4">
-            <div className="group block w-full flex-shrink-0">
-              <div className="flex items-center">
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                    {user?.name}
-                  </p>
-                  <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
-                    {user?.email}
-                  </p>
-                </div>
+          {/* Sidebar footer: user info */}
+          <div className="flex flex-shrink-0 border-t border-gray-200 dark:border-gray-700/60 p-4">
+            <div className="flex items-center w-full">
+              <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
+                  {user?.name?.charAt(0)?.toUpperCase()}
+                </span>
+              </div>
+              <div className="ml-2 flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
+                  {user?.name}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 truncate">
+                  {user?.email}
+                </p>
               </div>
             </div>
           </div>
@@ -209,12 +212,12 @@ const Layout = () => {
       </div>
 
       {/* Main content */}
-      <div className={`lg:pl-64 flex flex-col ${isImmersive ? 'h-full overflow-hidden' : 'flex-1 min-h-screen'}`}>
+      <div className={`lg:pl-64 flex flex-col ${isFullHeight ? 'h-full overflow-hidden' : 'flex-1 min-h-screen'}`}>
         {/* Top navigation */}
-        <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
+        <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white dark:bg-gray-900 shadow dark:shadow-gray-900/50 border-b border-gray-200 dark:border-gray-700/60">
           <button
             type="button"
-            className="border-r border-gray-200 px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden"
+            className="border-r border-gray-200 dark:border-gray-700/60 px-4 text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
@@ -223,23 +226,49 @@ const Layout = () => {
             <div className="flex flex-1">
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center">
-                  <h1 className="text-lg font-semibold text-gray-900">
+                  <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {location.pathname === '/dashboard' && 'Dashboard'}
                     {location.pathname.startsWith('/classroom/') && 'Classroom'}
                     {location.pathname === '/youtube-summarizer' && 'YouTube Summarizer'}
                     {location.pathname === '/friends' && 'Friends'}
                     {location.pathname === '/friend-requests' && 'Friend Requests'}
                     {location.pathname === '/profile' && 'Profile'}
+                    {location.pathname === '/notes' && 'Notes'}
+                    {location.pathname === '/marketplace' && 'Marketplace'}
+                    {location.pathname === '/teachers' && 'Find Teachers'}
+                    {location.pathname === '/my-sessions' && 'My Sessions'}
+                    {location.pathname === '/messages' && 'Messages'}
+                    {location.pathname === '/resources' && 'Resources'}
                   </h1>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
                   {/* Connection status */}
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1.5">
                     <div className={`h-2 w-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`} />
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
                       {connected ? 'Connected' : 'Disconnected'}
                     </span>
                   </div>
+
+                  {/* Dark mode toggle */}
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    aria-label="Toggle dark mode"
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={isDark ? 'sun' : 'moon'}
+                        initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
+                        animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                        exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                      </motion.div>
+                    </AnimatePresence>
+                  </button>
 
                   {/* Logout button */}
                   <Button
@@ -247,7 +276,7 @@ const Layout = () => {
                     variant="ghost"
                     leftIcon={<LogOut className="h-4 w-4" />}
                   >
-                    Logout
+                    <span className="hidden sm:inline">Logout</span>
                   </Button>
                 </div>
               </div>
@@ -256,9 +285,9 @@ const Layout = () => {
         </div>
 
         {/* Page content */}
-        <main className={`flex-1 flex flex-col ${location.pathname.includes('/notes/session') || location.pathname === '/youtube-summarizer' ? 'overflow-hidden' : ''}`}>
-          <div className={location.pathname.includes('/notes/session') || location.pathname === '/youtube-summarizer' ? "flex-1 flex flex-col h-full min-h-0" : "py-6"}>
-            <div className={location.pathname.includes('/notes/session') || location.pathname === '/youtube-summarizer' ? "flex-1 h-full min-h-0 relative" : "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"}>
+        <main className={`flex-1 flex flex-col ${isFullHeight ? 'overflow-hidden' : ''}`}>
+          <div className={isFullHeight ? "flex-1 flex flex-col h-full min-h-0" : isFullWidth ? "" : "py-6"}>
+            <div className={isFullHeight ? "flex-1 h-full min-h-0 relative" : isFullWidth ? "w-full" : "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"}>
               <Outlet />
             </div>
           </div>
@@ -269,4 +298,3 @@ const Layout = () => {
 };
 
 export default Layout;
-

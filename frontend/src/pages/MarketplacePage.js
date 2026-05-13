@@ -80,7 +80,7 @@ const MarketplacePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -140,8 +140,8 @@ const MarketplacePage = () => {
           {/* Sidebar */}
           <div className="w-64 flex-shrink-0">
             {/* Search */}
-            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Search Notes</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Search Notes</h3>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -149,14 +149,14 @@ const MarketplacePage = () => {
                   placeholder="Search by title, topic..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
 
             {/* Categories */}
-            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                 <Filter className="h-4 w-4 mr-2" />
                 Categories
               </h3>
@@ -167,8 +167,8 @@ const MarketplacePage = () => {
                     onClick={() => setSelectedCategory(cat)}
                     className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                       selectedCategory === cat
-                        ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-medium'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                   >
                     {cat}
@@ -183,8 +183,8 @@ const MarketplacePage = () => {
             </div>
 
             {/* Price Filter */}
-            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Price</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Price</h3>
               <div className="space-y-2">
                 {[
                   { value: 'all', label: 'All Notes' },
@@ -200,15 +200,15 @@ const MarketplacePage = () => {
                       onChange={(e) => setPriceFilter(e.target.value)}
                       className="mr-2"
                     />
-                    <span className="text-sm text-gray-700">{option.label}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{option.label}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             {/* Top Sellers */}
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                 <Award className="h-4 w-4 mr-2 text-yellow-500" />
                 Top Sellers
               </h3>
@@ -216,18 +216,18 @@ const MarketplacePage = () => {
                 {leaderboard.slice(0, 5).map((seller, idx) => (
                   <div key={seller.seller_id} className="flex items-center space-x-2">
                     <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      idx === 0 ? 'bg-yellow-100 text-yellow-700' :
-                      idx === 1 ? 'bg-gray-100 text-gray-700' :
-                      idx === 2 ? 'bg-orange-100 text-orange-700' :
-                      'bg-blue-50 text-blue-600'
+                      idx === 0 ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300' :
+                      idx === 1 ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
+                      idx === 2 ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' :
+                      'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                     }`}>
                       {idx + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {seller.seller_name}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {seller.total_downloads} downloads
                       </p>
                     </div>
@@ -244,7 +244,7 @@ const MarketplacePage = () => {
           {/* Main Content */}
           <div className="flex-1">
             {/* Tabs & Sort */}
-            <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm mb-4">
               <div className="flex items-center justify-between">
                 <div className="flex space-x-4">
                   {[
@@ -257,8 +257,8 @@ const MarketplacePage = () => {
                       onClick={() => setSortBy(tab.id)}
                       className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                         sortBy === tab.id
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-medium'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >
                       <tab.icon className="h-4 w-4" />
@@ -266,7 +266,7 @@ const MarketplacePage = () => {
                     </button>
                   ))}
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Showing <span className="font-medium">{notes.length}</span> notes
                 </p>
               </div>
@@ -280,8 +280,8 @@ const MarketplacePage = () => {
             ) : notes.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No notes found</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No notes found</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Try adjusting your filters or be the first to upload!
                 </p>
               </div>
@@ -292,14 +292,14 @@ const MarketplacePage = () => {
                     key={note.id || note._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md dark:hover:shadow-gray-900/40 transition-shadow cursor-pointer overflow-hidden"
                     onClick={() => {
                       console.log('Selected note:', note);
                       setSelectedNote(note);
                     }}
                   >
                     {/* Note Preview */}
-                    <div className="h-32 bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center relative">
+                    <div className="h-32 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center relative">
                       <FileText className="h-16 w-16 text-blue-400" />
                       {note.is_free && (
                         <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
@@ -311,23 +311,23 @@ const MarketplacePage = () => {
                     {/* Note Details */}
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1">
                           {note.title}
                         </h3>
                       </div>
 
                       <div className="flex items-center space-x-2 text-xs text-gray-500 mb-2">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                        <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded">
                           {note.category}
                         </span>
                         <span>{note.subject}</span>
                       </div>
 
-                      <p className="text-xs text-gray-600 line-clamp-2 mb-3">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
                         {note.description}
                       </p>
 
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
                         <div className="flex items-center space-x-3">
                           <div className="flex items-center">
                             <Eye className="h-3 w-3 mr-1" />
@@ -344,12 +344,12 @@ const MarketplacePage = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                         <div className="flex items-center space-x-2">
                           <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                             {note.seller_name?.[0] || 'U'}
                           </div>
-                          <span className="text-xs text-gray-600">{note.seller_name}</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400">{note.seller_name}</span>
                         </div>
                         <div className="text-right">
                           {note.is_free ? (

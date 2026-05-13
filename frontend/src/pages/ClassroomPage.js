@@ -355,19 +355,19 @@ const ClassroomPage = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 mb-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 mb-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate('/dashboard')}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {classroom?.name}
                 {isAdmin && (
                   <span className="ml-3 px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
@@ -376,13 +376,13 @@ const ClassroomPage = () => {
                 )}
               </h1>
               {classroom?.description && (
-                <p className="text-sm text-gray-500">{classroom.description}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{classroom.description}</p>
               )}
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            <button className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
               <Users className="h-5 w-5" />
               <span className="font-medium">{classroom?.members?.length || 0} members</span>
             </button>
@@ -406,19 +406,19 @@ const ClassroomPage = () => {
             <div className="relative">
               <button
                 onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <Settings className="h-5 w-5" />
               </button>
               
               {showSettingsMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                   <button
                     onClick={() => {
                       setShowMembersModal(true);
                       setShowSettingsMenu(false);
                     }}
-                    className="flex items-center w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     <Users className="h-4 w-4 mr-3" />
                     View Members
@@ -431,7 +431,7 @@ const ClassroomPage = () => {
                           setShowEditNameModal(true);
                           setShowSettingsMenu(false);
                         }}
-                        className="flex items-center w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                        className="flex items-center w-full px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-t border-gray-100 dark:border-gray-700"
                       >
                         <Edit3 className="h-4 w-4 mr-3" />
                         Edit Classroom Name
@@ -441,7 +441,7 @@ const ClassroomPage = () => {
                           setShowDeleteConfirm(true);
                           setShowSettingsMenu(false);
                         }}
-                        className="flex items-center w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
+                        className="flex items-center w-full px-4 py-3 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-700"
                       >
                         <Trash2 className="h-4 w-4 mr-3" />
                         Delete Classroom
@@ -455,7 +455,7 @@ const ClassroomPage = () => {
                         }
                         setShowSettingsMenu(false);
                       }}
-                      className="flex items-center w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors border-t border-gray-100"
+                      className="flex items-center w-full px-4 py-3 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-700"
                     >
                       <LogOut className="h-4 w-4 mr-3" />
                       Leave Classroom
@@ -470,13 +470,13 @@ const ClassroomPage = () => {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - Rooms */}
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-gray-900">Channels</h2>
+              <h2 className="text-sm font-medium text-gray-900 dark:text-white">Channels</h2>
               <button
                 onClick={() => setShowCreateRoomModal(true)}
-                className="p-1 text-gray-400 hover:text-gray-600"
+                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 title="Create Channel"
               >
                 <Plus className="h-4 w-4" />
@@ -495,8 +495,8 @@ const ClassroomPage = () => {
                   <div
                     key={room.id || room._id}
                     className={`relative group rounded-lg p-3 cursor-pointer transition-colors ${(selectedRoom?.id || selectedRoom?._id) === (room.id || room._id)
-                        ? 'bg-primary-100 text-primary-900'
-                        : 'hover:bg-gray-50'
+                        ? 'bg-primary-100 dark:bg-indigo-900/30 text-primary-900 dark:text-indigo-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     onClick={() => handleRoomSelect(room)}
                   >
@@ -525,21 +525,21 @@ const ClassroomPage = () => {
                     </div>
 
                     {room.description && (
-                      <p className="text-xs text-gray-500 mt-1 truncate">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                         {room.description}
                       </p>
                     )}
 
                     {/* Room menu */}
                     {showRoomMenu === (room.id || room._id) && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-10">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             // TODO: Implement edit room
                             setShowRoomMenu(null);
                           }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           <Edit3 className="h-4 w-4 mr-2" />
                           Edit Room
@@ -549,7 +549,7 @@ const ClassroomPage = () => {
                             e.stopPropagation();
                             handleDeleteRoom(room.id || room._id);
                           }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete Room
@@ -568,16 +568,16 @@ const ClassroomPage = () => {
           {selectedRoom ? (
             <div className="flex flex-col h-full overflow-hidden">
               {/* Resources toggle bar */}
-              <div className="flex-none px-4 py-2 border-b border-gray-100 bg-white flex items-center justify-between">
-                <span className="text-xs text-gray-500 font-medium">
+              <div className="flex-none px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                   #{selectedRoom.name === 'General' ? 'general' : selectedRoom.name}
                 </span>
                 <button
                   onClick={() => setShowResources(!showResources)}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                     showResources
-                      ? 'bg-blue-50 border-blue-200 text-blue-700'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-400'
+                      : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <BookOpen className="h-4 w-4" />
@@ -587,9 +587,9 @@ const ClassroomPage = () => {
 
               {/* Resources panel */}
               {showResources && (
-                <div className="flex-none border-b border-gray-200 bg-gray-50 p-3 max-h-64 overflow-y-auto">
+                <div className="flex-none border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 p-3 max-h-64 overflow-y-auto">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-700">Shared Notes</h3>
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Shared Notes</h3>
                     <button
                       onClick={() => setShowResources(false)}
                       className="text-xs text-gray-400 hover:text-gray-600"
@@ -605,12 +605,12 @@ const ClassroomPage = () => {
                     roomResources.map((resource) => (
                       <div
                         key={resource.document_id}
-                        className="bg-white rounded-lg border border-gray-200 p-3 mb-2 cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all"
+                        className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-3 mb-2 cursor-pointer hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all"
                         onClick={() => navigate(`/notes/editor/${resource.document_id}`)}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{resource.title}</p>
                             {resource.content_preview && (
                               <p className="text-xs text-gray-500 mt-0.5 truncate">{resource.content_preview}</p>
                             )}
@@ -620,12 +620,12 @@ const ClassroomPage = () => {
                         <div className="flex items-center flex-wrap gap-x-3 mt-2">
                           <span className="text-xs text-gray-400">
                             Shared by{' '}
-                            <span className="font-medium text-gray-600">{resource.shared_by_name}</span>
+                            <span className="font-medium text-gray-600 dark:text-gray-300">{resource.shared_by_name}</span>
                           </span>
                           {resource.last_edited_by && (
                             <span className="text-xs text-gray-400">
                               · Last edited by{' '}
-                              <span className="font-medium text-gray-600">{resource.last_edited_by}</span>
+                              <span className="font-medium text-gray-600 dark:text-gray-300">{resource.last_edited_by}</span>
                             </span>
                           )}
                           <button
@@ -659,8 +659,8 @@ const ClassroomPage = () => {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No room selected</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No room selected</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Select a room from the sidebar to start chatting
                 </p>
               </div>
@@ -681,9 +681,9 @@ const ClassroomPage = () => {
       {/* Add Member Modal */}
       {showAddMemberModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowAddMemberModal(false)}>
-          <div className="bg-white rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-100 dark:border-gray-700 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Add Friends to Classroom</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Friends to Classroom</h3>
               <button
                 onClick={() => setShowAddMemberModal(false)}
                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -694,15 +694,15 @@ const ClassroomPage = () => {
 
             <div className="space-y-3">
               {availableFriends.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                   No friends available to add. All your friends are already members of this classroom.
                 </p>
               ) : (
                 availableFriends.map((friend) => (
-                  <div key={friend.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                  <div key={friend.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
                     <div>
-                      <p className="font-medium text-gray-900">{friend.username}</p>
-                      <p className="text-sm text-gray-500">{friend.email}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{friend.username}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{friend.email}</p>
                     </div>
                     <button
                       onClick={() => handleAddMember(friend.id)}
@@ -722,9 +722,9 @@ const ClassroomPage = () => {
       {/* Edit Classroom Name Modal */}
       {showEditNameModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowEditNameModal(false)}>
-          <div className="bg-white rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-100 dark:border-gray-700 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Edit Classroom Name</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Classroom Name</h3>
               <button
                 onClick={() => setShowEditNameModal(false)}
                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -735,14 +735,14 @@ const ClassroomPage = () => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Classroom Name
                 </label>
                 <input
                   type="text"
                   value={editingName}
                   onChange={(e) => setEditingName(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter classroom name"
                   onKeyPress={(e) => e.key === 'Enter' && handleEditClassroomName()}
                 />
@@ -750,7 +750,7 @@ const ClassroomPage = () => {
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowEditNameModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -770,7 +770,7 @@ const ClassroomPage = () => {
       {/* Delete Classroom Confirmation */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-white rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-100 dark:border-gray-700 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-red-600">Delete Classroom</h3>
               <button
@@ -782,10 +782,10 @@ const ClassroomPage = () => {
             </div>
             
             <div className="space-y-4">
-              <p className="text-gray-700">
-                Are you sure you want to delete <strong>{classroom?.name}</strong>? 
+              <p className="text-gray-700 dark:text-gray-300">
+                Are you sure you want to delete <strong>{classroom?.name}</strong>?
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 This will permanently delete all channels, messages, and data associated with this classroom. This action cannot be undone.
               </p>
               <div className="flex justify-end space-x-3">
@@ -811,9 +811,9 @@ const ClassroomPage = () => {
       {/* Invite Code Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowInviteModal(false)}>
-          <div className="bg-white rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-100 dark:border-gray-700 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Classroom Invite Code</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Classroom Invite Code</h3>
               <button
                 onClick={() => setShowInviteModal(false)}
                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -823,12 +823,12 @@ const ClassroomPage = () => {
             </div>
             
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Share this code with others to let them join your classroom.
               </p>
               <div className="flex items-center space-x-2">
-                <div className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-3">
-                  <code className="text-lg font-mono font-semibold text-gray-900">
+                <div className="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3">
+                  <code className="text-lg font-mono font-semibold text-gray-900 dark:text-white">
                     {classroom?.invite_code}
                   </code>
                 </div>
@@ -853,10 +853,10 @@ const ClassroomPage = () => {
       {/* View Members Modal */}
       {showMembersModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden border border-gray-100 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Classroom Members</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Classroom Members</h3>
                 <button
                   onClick={() => setShowMembersModal(false)}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -868,13 +868,13 @@ const ClassroomPage = () => {
             
             <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
               {members.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">No members found</p>
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No members found</p>
               ) : (
                 <div className="space-y-2">
                   {members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -882,7 +882,7 @@ const ClassroomPage = () => {
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-gray-900 dark:text-white">
                               {member.name || member.username}
                             </p>
                             {member.is_admin && (
@@ -891,7 +891,7 @@ const ClassroomPage = () => {
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600">{member.email}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{member.email}</p>
                         </div>
                       </div>
                       {isAdmin && !member.is_admin && (
@@ -902,7 +902,7 @@ const ClassroomPage = () => {
                             }
                           }}
                           disabled={removeMemberMutation.isLoading}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           title="Remove member"
                         >
                           <Trash2 className="h-4 w-4" />

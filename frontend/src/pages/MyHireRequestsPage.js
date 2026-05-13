@@ -67,14 +67,14 @@ export default function MyHireRequestsPage() {
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Hire Requests</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Hire Requests</h1>
           <p className="mt-2 text-gray-600">
             View and manage your teacher hire requests
           </p>
         </div>
 
         {requests.length === 0 ? (
-          <div className="bg-white shadow rounded-lg p-8 text-center">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
             <p className="text-gray-600 mb-4">You haven't sent any hire requests yet</p>
             <Link
               to="/teachers"
@@ -86,7 +86,7 @@ export default function MyHireRequestsPage() {
         ) : (
           <div className="space-y-4">
             {requests.map((request) => (
-              <div key={request.id} className="bg-white shadow rounded-lg p-6">
+              <div key={request.id} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center mb-3">

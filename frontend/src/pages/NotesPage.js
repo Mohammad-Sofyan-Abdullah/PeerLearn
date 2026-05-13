@@ -17,7 +17,9 @@ import {
   Sparkles,
   Play,
   BookOpen,
-  Layers
+  Layers,
+  Loader2,
+  ChevronRight
 } from 'lucide-react';
 import { notesAPI } from '../utils/api';
 import toast from 'react-hot-toast';
@@ -36,6 +38,12 @@ const NotesPage = () => {
   const [uploadTitle, setUploadTitle] = useState('');
   const [activeMainTab, setActiveMainTab] = useState('documents'); // 'documents' or 'sessions'
   const [sessionToDelete, setSessionToDelete] = useState(null);
+
+  // Deep (cross-document) search state
+  const [searchMode, setSearchMode] = useState('filter'); // 'filter' | 'deep'
+  const [deepSearchQuery, setDeepSearchQuery] = useState('');
+  const [deepSearchResults, setDeepSearchResults] = useState(null);
+  const [isDeepSearching, setIsDeepSearching] = useState(false);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -187,6 +195,21 @@ const NotesPage = () => {
     setSearchQuery(searchInput);
   };
 
+  const handleDeepSearch = async (e) => {
+    e.preventDefault();
+    if (!deepSearchQuery.trim()) return;
+    setIsDeepSearching(true);
+    setDeepSearchResults(null);
+    try {
+      const response = await notesAPI.searchNotes(deepSearchQuery.trim());
+      setDeepSearchResults(response.data);
+    } catch (err) {
+      toast.error('Search failed. Please try again.');
+    } finally {
+      setIsDeepSearching(false);
+    }
+  };
+
 
   const confirmDelete = () => {
     if (documentToDelete) {
@@ -218,14 +241,14 @@ const NotesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Notes</h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notes</h1>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Create, edit, and manage your documents with AI assistance
               </p>
             </div>
@@ -250,27 +273,138 @@ const NotesPage = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search */}
-        <div className="mb-6">
-          <form onSubmit={handleSearch}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        {/* Search mode toggle */}
+        <div className="flex items-center space-x-2 mb-4">
+          <button
+            onClick={() => { setSearchMode('filter'); setDeepSearchResults(null); }}
+            className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center space-x-1.5 ${
+              searchMode === 'filter'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            <span>Filter Notes</span>
+          </button>
+          <button
+            onClick={() => { setSearchMode('deep'); setSearchQuery(''); }}
+            className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center space-x-1.5 ${
+              searchMode === 'deep'
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Search Across All Notes</span>
+          </button>
+        </div>
+
+        {/* Search bar — filter mode */}
+        {searchMode === 'filter' && (
+          <div className="mb-6">
+            <form onSubmit={handleSearch}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Search documents..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="input pl-10 pr-24 w-full"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Search bar — deep (cross-document) mode */}
+        {searchMode === 'deep' && (
+          <div className="mb-6">
+            <form onSubmit={handleDeepSearch} className="flex space-x-2">
               <input
-                type="text"
-                placeholder="Search documents..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="input pl-10 pr-24 w-full"
+                value={deepSearchQuery}
+                onChange={e => setDeepSearchQuery(e.target.value)}
+                placeholder='e.g. "theory of relativity" or "machine learning gradient"'
+                className="flex-1 border border-purple-200 dark:border-purple-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                disabled={!deepSearchQuery.trim() || isDeepSearching}
+                className="px-5 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 disabled:opacity-50 transition-colors flex items-center space-x-2"
               >
-                Search
+                {isDeepSearching
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Search className="h-4 w-4" />}
+                <span>{isDeepSearching ? 'Searching...' : 'Search'}</span>
               </button>
-            </div>
-          </form>
-        </div>
+            </form>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Search for concepts and topics across all your notes at once</p>
+          </div>
+        )}
+
+        {/* Deep search results */}
+        {searchMode === 'deep' && deepSearchResults && (
+          <div className="space-y-4 mb-8">
+            {/* AI Summary */}
+            {deepSearchResults.ai_summary && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
+                <div className="flex items-start space-x-2">
+                  <Sparkles className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">AI Summary</p>
+                    <p className="text-sm text-purple-900 dark:text-purple-200 leading-relaxed">{deepSearchResults.ai_summary}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Result count */}
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Found{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">{deepSearchResults.total}</span>
+              {' '}note{deepSearchResults.total !== 1 ? 's' : ''} matching{' '}
+              <span className="italic">"{deepSearchResults.query}"</span>
+            </p>
+
+            {/* Result cards */}
+            {deepSearchResults.results.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <Search className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-600">No notes found</p>
+                <p className="text-xs text-gray-400 mt-1">Try different keywords or check your spelling</p>
+              </div>
+            ) : (
+              deepSearchResults.results.map(result => (
+                <div
+                  key={result.id}
+                  onClick={() => navigate(`/notes/view/${result.id}`)}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-sm transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
+                      {result.title}
+                    </h3>
+                    <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-purple-500 transition-colors flex-shrink-0 mt-0.5" />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3">
+                    {result.snippet.replace(/<[^>]*>?/gm, '')}
+                  </p>
+                  {result.updated_at && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      Updated {new Date(result.updated_at).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Unified Grid */}
         {
@@ -281,8 +415,8 @@ const NotesPage = () => {
           ) : unifiedDocuments.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No documents found</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No documents found</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Get started by creating a new document or uploading an existing one.
               </p>
               <div className="mt-6 flex justify-center space-x-3">
@@ -325,7 +459,7 @@ const NotesPage = () => {
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {doc.title}
                         </h3>
                         {doc.source === 'classroom_share' && (
@@ -333,7 +467,7 @@ const NotesPage = () => {
                             From classroom
                           </span>
                         )}
-                        <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
+                        <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
                           <Calendar className="h-3 w-3" />
                           <span>{formatDate(doc.updated_at)}</span>
                           {doc.file_size && (
@@ -395,7 +529,7 @@ const NotesPage = () => {
                       </div>
                     ) : (
                       <div className="mt-2">
-                        <p className="text-sm text-gray-500 line-clamp-2 mb-3 h-10">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3 h-10">
                           {doc.content ? doc.content.substring(0, 80) + '...' : 'No preview available'}
                         </p>
                         <Button
@@ -425,10 +559,10 @@ const NotesPage = () => {
       {
         showCreateModal && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
               <form onSubmit={handleCreateDocument}>
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Create New Document</h3>
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Create New Document</h3>
                 </div>
                 <div className="px-6 py-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -443,7 +577,7 @@ const NotesPage = () => {
                     autoFocus
                   />
                 </div>
-                <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
                   <Button
                     type="button"
                     onClick={() => {
@@ -472,14 +606,14 @@ const NotesPage = () => {
       {
         showUploadModal && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
               <form onSubmit={handleUploadDocument}>
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Upload Document</h3>
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Upload Document</h3>
                 </div>
                 <div className="px-6 py-4 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Document Title (Optional)
                     </label>
                     <input
@@ -510,7 +644,7 @@ const NotesPage = () => {
                     </p>
                   </div>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
                   <Button
                     type="button"
                     onClick={() => {

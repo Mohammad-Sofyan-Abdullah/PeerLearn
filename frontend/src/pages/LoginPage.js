@@ -62,14 +62,14 @@ const LoginPage = () => {
           >
             <div className="flex items-center justify-center mb-8">
               <BookOpen className="h-12 w-12 text-primary-600" />
-              <span className="ml-3 text-3xl font-bold text-gray-900">PeerLearn</span>
+              <span className="ml-3 text-3xl font-bold text-gray-900 dark:text-white">PeerLearn</span>
             </div>
 
             <div>
-              <h2 className="mt-6 text-3xl font-bold text-gray-900">
+              <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
                 Welcome back
               </h2>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 Sign in to your account to continue learning
               </p>
             </div>
@@ -89,7 +89,7 @@ const LoginPage = () => {
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email address
                 </label>
                 <div className="mt-1 relative">
@@ -111,7 +111,7 @@ const LoginPage = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Password
                 </label>
                 <div className="mt-1 relative">
@@ -156,11 +156,11 @@ const LoginPage = () => {
               </div>
 
               <div className="text-center">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Don't have an account?{' '}
                   <Link
                     to="/register"
-                    className="font-medium text-primary-600 hover:text-primary-500"
+                    className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
                   >
                     Sign up here
                   </Link>

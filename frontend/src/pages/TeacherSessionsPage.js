@@ -66,35 +66,35 @@ export default function TeacherSessionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-6">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Sessions & Requests</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sessions & Requests</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             Manage your teaching sessions and student requests
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white shadow rounded-lg mb-6">
-          <div className="border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('requests')}
-                className={`py-4 px-6 text-sm font-medium ${
+                className={`py-4 px-6 text-sm font-medium transition-colors ${
                   activeTab === 'requests'
-                    ? 'border-b-2 border-indigo-500 text-indigo-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                 }`}
               >
                 Hire Requests ({requests.filter(r => r.status === 'pending').length} pending)
               </button>
               <button
                 onClick={() => setActiveTab('sessions')}
-                className={`py-4 px-6 text-sm font-medium ${
+                className={`py-4 px-6 text-sm font-medium transition-colors ${
                   activeTab === 'sessions'
-                    ? 'border-b-2 border-indigo-500 text-indigo-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                 }`}
               >
                 My Sessions ({sessions.length})
@@ -107,10 +107,10 @@ export default function TeacherSessionsPage() {
             {activeTab === 'requests' && (
               <div className="space-y-4">
                 {requests.length === 0 ? (
-                  <p className="text-gray-600 text-center py-8">No hire requests yet</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-center py-8">No hire requests yet</p>
                 ) : (
                   requests.map((request) => (
-                    <div key={request.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div key={request.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
@@ -122,8 +122,8 @@ export default function TeacherSessionsPage() {
                               />
                             )}
                             <div>
-                              <h4 className="font-semibold">{request.student.name}</h4>
-                              <p className="text-sm text-gray-600">{request.student.email}</p>
+                              <h4 className="font-semibold text-gray-900 dark:text-white">{request.student.name}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{request.student.email}</p>
                             </div>
                           </div>
                           <div className="space-y-1 mb-3">
@@ -134,7 +134,7 @@ export default function TeacherSessionsPage() {
                               <p><span className="font-medium">Description:</span> {request.description}</p>
                             )}
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Requested on {new Date(request.created_at).toLocaleDateString()}
                           </p>
                         </div>
@@ -174,7 +174,7 @@ export default function TeacherSessionsPage() {
                   <p className="text-gray-600 text-center py-8">No sessions scheduled yet</p>
                 ) : (
                   sessions.map((session) => (
-                    <div key={session.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div key={session.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
@@ -186,11 +186,11 @@ export default function TeacherSessionsPage() {
                               />
                             )}
                             <div>
-                              <h4 className="font-semibold">{session.other_party.name}</h4>
-                              <p className="text-sm text-gray-600">Student</p>
+                              <h4 className="font-semibold text-gray-900 dark:text-white">{session.other_party.name}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Student</p>
                             </div>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1 text-gray-700 dark:text-gray-300">
                             <p><span className="font-medium">Subject:</span> {session.subject}</p>
                             <p><span className="font-medium">Duration:</span> {session.duration_minutes} minutes</p>
                             {session.scheduled_time && (

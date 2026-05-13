@@ -48,18 +48,18 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
   };
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+    <div className="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700/60 flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700/60">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center justify-between w-full text-left"
+          className="flex items-center justify-between w-full text-left text-gray-900 dark:text-white"
         >
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-red-100 rounded-lg">
               <Youtube className="h-5 w-5 text-red-600" />
             </div>
-            <span className="font-medium text-gray-900">YouTube Summarizer</span>
+            <span className="font-medium text-gray-900 dark:text-white">YouTube Summarizer</span>
           </div>
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-gray-500" />
@@ -79,7 +79,7 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
             className="flex-1 flex flex-col overflow-hidden"
           >
             {/* New Session Button */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700/60">
               <button
                 onClick={onNewSession}
                 className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
@@ -97,11 +97,11 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
                 </div>
               ) : sessions.length === 0 ? (
                 <div className="p-4 text-center">
-                  <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                  <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-3">
                     <PlayCircle className="h-6 w-6 text-gray-400" />
                   </div>
-                  <p className="text-sm text-gray-500 mb-2">No summaries yet</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No summaries yet</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     Create your first YouTube summary to get started
                   </p>
                 </div>
@@ -113,8 +113,8 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
                       onClick={() => onSessionSelect(session.id || session._id)}
                       className={`w-full text-left p-3 rounded-lg transition-colors ${
                         selectedSessionId === (session.id || session._id)
-                          ? 'bg-red-50 border border-red-200'
-                          : 'hover:bg-gray-50 border border-transparent'
+                          ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent'
                       }`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -122,8 +122,8 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
                       <div className="flex items-start space-x-3">
                         <div className={`p-1.5 rounded ${
                           selectedSessionId === (session.id || session._id)
-                            ? 'bg-red-100'
-                            : 'bg-gray-100'
+                            ? 'bg-red-100 dark:bg-red-900/30'
+                            : 'bg-gray-100 dark:bg-gray-700'
                         }`}>
                           <Youtube className={`h-3 w-3 ${
                             selectedSessionId === (session.id || session._id)
@@ -135,8 +135,8 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
                         <div className="flex-1 min-w-0">
                           <h3 className={`text-sm font-medium truncate ${
                             selectedSessionId === (session.id || session._id)
-                              ? 'text-red-900'
-                              : 'text-gray-900'
+                              ? 'text-red-900 dark:text-red-300'
+                              : 'text-gray-900 dark:text-gray-100'
                           }`}>
                             {truncateTitle(session.video_title || 'Untitled Video')}
                           </h3>
@@ -144,7 +144,7 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
                           <div className="flex items-center space-x-2 mt-1">
                             <div className="flex items-center space-x-1">
                               <Calendar className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {formatDate(session.created_at)}
                               </span>
                             </div>
@@ -152,7 +152,7 @@ const YouTubeSidebar = ({ selectedSessionId, onSessionSelect, onNewSession }) =>
                             {session.video_duration && (
                               <div className="flex items-center space-x-1">
                                 <Clock className="h-3 w-3 text-gray-400" />
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {Math.floor(session.video_duration / 60)}m
                                 </span>
                               </div>

@@ -43,44 +43,39 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (!file) {
       toast.error('Please select a file');
       return;
     }
-
     uploadMutation.mutate({ ...formData, file });
   };
 
   const categories = [
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'Computer Science',
-    'Engineering',
-    'Other'
+    'Mathematics', 'Physics', 'Chemistry', 'Biology',
+    'Computer Science', 'Engineering', 'Other'
   ];
 
+  const inputCls = "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500";
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Upload className="h-6 w-6 text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Upload className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Upload Your Notes</h2>
-              <p className="text-sm text-gray-600">Share your knowledge and earn credits</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Upload Your Notes</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Share your knowledge and earn credits</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -88,7 +83,7 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Note Title *
             </label>
             <input
@@ -96,14 +91,14 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g., Advanced Calculus Complete Notes"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={inputCls}
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description *
             </label>
             <textarea
@@ -111,7 +106,7 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Describe what's covered in your notes..."
               rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={inputCls}
               required
             />
           </div>
@@ -119,13 +114,13 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
           {/* Category & Subject */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category *
               </label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={inputCls}
                 required
               >
                 {categories.map(cat => (
@@ -134,7 +129,7 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Subject *
               </label>
               <input
@@ -142,7 +137,7 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 placeholder="e.g., Calculus"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={inputCls}
                 required
               />
             </div>
@@ -150,14 +145,14 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
 
           {/* File Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Upload File * (PDF, DOCX, PPTX, TXT)
             </label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-blue-400 dark:hover:border-blue-500 transition-colors bg-gray-50 dark:bg-gray-700/30">
               <div className="space-y-1 text-center">
-                <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="flex text-sm text-gray-600">
-                  <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                <FileText className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                  <label className="relative cursor-pointer rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
                     <span>Upload a file</span>
                     <input
                       type="file"
@@ -169,11 +164,11 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
                   </label>
                   <p className="pl-1">or drag and drop</p>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   PDF, DOCX, PPTX, TXT up to 10MB
                 </p>
                 {file && (
-                  <p className="text-sm text-blue-600 font-medium">
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                     Selected: {file.name}
                   </p>
                 )}
@@ -188,14 +183,14 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
                 type="checkbox"
                 checked={formData.is_free}
                 onChange={(e) => setFormData({ ...formData, is_free: e.target.checked, price: e.target.checked ? 0 : 10 })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm font-medium text-gray-700">Make this note free</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Make this note free</span>
             </label>
 
             {!formData.is_free && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Price (Credits) *
                 </label>
                 <div className="relative">
@@ -206,11 +201,11 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
                     onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) })}
                     min="1"
                     max="1000"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`${inputCls} pl-10`}
                     required={!formData.is_free}
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Recommended: Rs 10-50 for notes, Rs 50-200 for comprehensive materials
                 </p>
               </div>
@@ -219,7 +214,7 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
 
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Tags (optional)
             </label>
             <input
@@ -227,9 +222,9 @@ const UploadNoteModal = ({ onClose, onSuccess }) => {
               value={formData.tags}
               onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
               placeholder="e.g., derivatives, integrals, limits (comma-separated)"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={inputCls}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Add tags to help others find your notes
             </p>
           </div>

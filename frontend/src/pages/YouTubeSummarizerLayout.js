@@ -34,7 +34,7 @@ const YouTubeSummarizerLayout = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex overflow-hidden">
+    <div className="h-full flex overflow-hidden">
 
       {/* Sidebar */}
       <AnimatePresence>

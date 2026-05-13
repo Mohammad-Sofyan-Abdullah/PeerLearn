@@ -273,9 +273,9 @@ const DocumentSessionPage = () => {
     ];
 
     return (
-        <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
+        <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-950 overflow-hidden">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 flex-none z-10">
+            <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700/60 flex-none z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center space-x-4 flex-1 min-w-0">
@@ -286,10 +286,10 @@ const DocumentSessionPage = () => {
                                 <ArrowLeft className="h-5 w-5 text-gray-600" />
                             </button>
                             <div className="min-w-0 flex-1">
-                                <h1 className="text-xl font-bold text-gray-900 truncate" title={session.document_title}>
+                                <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate" title={session.document_title}>
                                     {session.document_title}
                                 </h1>
-                                <p className="text-sm text-gray-500 truncate">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                                     Document Session
                                 </p>
                             </div>
@@ -331,8 +331,8 @@ const DocumentSessionPage = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }`}
                             >
                                 <tab.icon className="h-4 w-4" />
@@ -354,15 +354,15 @@ const DocumentSessionPage = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full"
+                                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full"
                             >
-                                <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex items-center justify-between">
+                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-between">
                                     <div>
-                                        <h2 className="font-semibold text-gray-900 flex items-center space-x-2">
+                                        <h2 className="font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
                                             <Brain className="h-5 w-5 text-blue-600" />
                                             <span>Chat with Document</span>
                                         </h2>
-                                        <p className="text-sm text-gray-600 mt-1">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                             Ask questions about the document content
                                         </p>
                                     </div>
@@ -387,8 +387,8 @@ const DocumentSessionPage = () => {
                                     {(!session.chat_history || session.chat_history.length === 0) ? (
                                         <div className="text-center py-12">
                                             <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                            <p className="text-gray-500">Start a conversation about the document</p>
-                                            <p className="text-sm text-gray-400 mt-2">
+                                            <p className="text-gray-500 dark:text-gray-400">Start a conversation about the document</p>
+                                            <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                                                 Try asking: "What is this document about?" or "Summarize the key points"
                                             </p>
                                         </div>
@@ -401,7 +401,7 @@ const DocumentSessionPage = () => {
                                                 <div
                                                     className={`max-w-[80%] p-3 rounded-lg ${msg.role === 'user'
                                                         ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-100 text-gray-900'
+                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                                                         }`}
                                                 >
                                                     {msg.role === 'user' ? (
@@ -415,7 +415,7 @@ const DocumentSessionPage = () => {
                                     )}
                                     {chatMutation.isLoading && (
                                         <div className="flex justify-start">
-                                            <div className="bg-gray-100 p-3 rounded-lg">
+                                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
                                                 <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
                                             </div>
                                         </div>
@@ -423,13 +423,13 @@ const DocumentSessionPage = () => {
                                 </div>
 
                                 {/* Quick Actions */}
-                                <div className="px-4 pb-2 pt-2 flex space-x-2 overflow-x-auto border-t border-gray-100 bg-gray-50/50">
+                                <div className="px-4 pb-2 pt-2 flex space-x-2 overflow-x-auto border-t border-gray-100 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-800/50">
                                     {QUICK_ACTIONS.map((action, idx) => (
                                         <button
                                             key={idx}
                                             type="button"
                                             onClick={() => chatMutation.mutate(action)}
-                                            className="px-4 py-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-full text-sm font-medium text-gray-700 hover:text-blue-700 whitespace-nowrap transition-all shadow-sm hover:shadow-md"
+                                            className="px-4 py-2 bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-gray-200 dark:border-gray-600 hover:border-blue-200 dark:hover:border-blue-700 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap transition-all shadow-sm hover:shadow-md"
                                         >
                                             {action}
                                         </button>
@@ -437,7 +437,7 @@ const DocumentSessionPage = () => {
                                 </div>
 
                                 {/* Chat Input */}
-                                <form onSubmit={handleSendChat} className="p-4 border-t border-gray-200 bg-white">
+                                <form onSubmit={handleSendChat} className="p-4 border-t border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800">
                                     <div className="flex space-x-3">
                                         <input
                                             type="text"
@@ -470,12 +470,12 @@ const DocumentSessionPage = () => {
                                 className="space-y-6 h-full overflow-y-auto pr-2"
                             >
                                 {(!session.short_summary && !session.detailed_summary) ? (
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
                                         <Sparkles className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                             No Summary Generated Yet
                                         </h3>
-                                        <p className="text-gray-500 mb-4">
+                                        <p className="text-gray-500 dark:text-gray-400 mb-4">
                                             Generate AI-powered summaries of your document
                                         </p>
                                         <StyledButton
@@ -491,11 +491,11 @@ const DocumentSessionPage = () => {
                                 ) : (
                                     <>
                                         {/* Short Summary */}
-                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50">
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">Quick Overview</h3>
-                                                    <p className="text-sm text-gray-600">A brief summary of the key points</p>
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white">Quick Overview</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">A brief summary of the key points</p>
                                                 </div>
                                                 <button
                                                     onClick={() => handleCopy(session.short_summary, 'short')}
@@ -514,11 +514,11 @@ const DocumentSessionPage = () => {
                                         </div>
 
                                         {/* Detailed Summary */}
-                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50">
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
                                                 <div>
-                                                    <h3 className="font-semibold text-gray-900">Detailed Summary</h3>
-                                                    <p className="text-sm text-gray-600">Comprehensive breakdown of the document</p>
+                                                    <h3 className="font-semibold text-gray-900 dark:text-white">Detailed Summary</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Comprehensive breakdown of the document</p>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
                                                     <button
@@ -562,17 +562,17 @@ const DocumentSessionPage = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="h-full flex flex-col bg-gray-50 rounded-xl overflow-hidden border border-gray-200"
+                                className="h-full flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800"
                             >
                                 {/* Header / Controls */}
-                                <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
+                                <div className="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
-                                        <div className="p-2 bg-indigo-100 rounded-lg">
+                                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
                                             <GraduationCap className="h-5 w-5 text-indigo-600" />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-gray-900">Flashcards</h3>
-                                            <p className="text-sm text-gray-500">
+                                            <h3 className="font-semibold text-gray-900 dark:text-white">Flashcards</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
                                                 {session.flashcards?.length || 0} cards available
                                             </p>
                                         </div>
@@ -590,14 +590,14 @@ const DocumentSessionPage = () => {
                                 </div>
 
                                 {/* Main Content */}
-                                <div className="flex-1 overflow-y-auto p-6 md:p-12 flex flex-col items-center justify-center bg-gray-50/50">
+                                <div className="flex-1 overflow-y-auto p-6 md:p-12 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900">
                                     {(!session?.flashcards || session.flashcards.length === 0) ? (
                                         <div className="text-center max-w-md mx-auto">
-                                            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mx-auto mb-6">
+                                            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-2xl shadow-sm border border-gray-300 dark:border-gray-600 flex items-center justify-center mx-auto mb-6">
                                                 <Layers className="h-8 w-8 text-indigo-500" />
                                             </div>
-                                            <h3 className="text-xl font-bold text-gray-900 mb-3">No flashcards yet</h3>
-                                            <p className="text-gray-500 mb-8 leading-relaxed">
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">No flashcards yet</h3>
+                                            <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
                                                 Generate flashcards from your document to start testing your knowledge and memorizing key concepts.
                                             </p>
                                             <StyledButton
@@ -614,7 +614,7 @@ const DocumentSessionPage = () => {
                                         <div className="w-full max-w-3xl flex flex-col gap-8">
                                             {/* Progress Bar */}
                                             <div className="w-full flex items-center gap-4">
-                                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                                <div className="flex-1 bg-gray-300 dark:bg-gray-700 rounded-full h-2">
                                                     <motion.div
                                                         className="bg-indigo-600 h-2 rounded-full"
                                                         initial={{ width: 0 }}
@@ -622,7 +622,7 @@ const DocumentSessionPage = () => {
                                                         transition={{ duration: 0.3 }}
                                                     />
                                                 </div>
-                                                <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                                     {Math.round(((currentFlashcardIndex + 1) / session.flashcards.length) * 100)}% Complete
                                                 </span>
                                             </div>
@@ -634,16 +634,16 @@ const DocumentSessionPage = () => {
                                             >
                                                 {/* Card Front */}
                                                 <motion.div
-                                                    className="absolute inset-0 w-full h-full bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 md:p-16 flex flex-col items-center justify-center text-center backface-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-300"
+                                                    className="absolute inset-0 w-full h-full bg-white dark:bg-gray-800 rounded-2xl shadow-md dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-gray-200 dark:border-gray-700 p-8 md:p-16 flex flex-col items-center justify-center text-center backface-hidden hover:shadow-lg transition-shadow duration-300"
                                                     animate={{ rotateY: isFlashcardFlipped ? 180 : 0 }}
                                                     transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
                                                     style={{ backfaceVisibility: 'hidden' }}
                                                 >
                                                     <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-6 px-3 py-1 bg-indigo-50 rounded-full">Question</span>
-                                                    <p className="text-2xl md:text-3xl font-medium text-gray-800 leading-relaxed font-serif">
+                                                    <p className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed font-serif">
                                                         {session.flashcards[currentFlashcardIndex]?.question}
                                                     </p>
-                                                    <p className="text-gray-400 text-sm mt-auto pt-8 group-hover:text-indigo-500 transition-colors flex items-center gap-2">
+                                                    <p className="text-gray-400 dark:text-gray-500 text-sm mt-auto pt-8 group-hover:text-indigo-500 transition-colors flex items-center gap-2">
                                                         <span>Click to flip</span>
                                                         <ArrowRight className="h-3 w-3" />
                                                     </p>
@@ -679,8 +679,8 @@ const DocumentSessionPage = () => {
                                                         handleFlashcardNavigation('prev');
                                                     }}
                                                     className={`p-4 rounded-full transition-all duration-200 flex items-center gap-2 ${currentFlashcardIndex === 0
-                                                        ? 'text-gray-300 cursor-not-allowed'
-                                                        : 'text-gray-700 hover:bg-white hover:shadow-md hover:text-indigo-600 bg-white/50 border border-transparent hover:border-gray-100'
+                                                        ? 'text-gray-500 cursor-not-allowed'
+                                                        : 'text-gray-200 hover:bg-gray-700 hover:shadow-md hover:text-indigo-400 bg-gray-800/50 border border-transparent hover:border-gray-600'
                                                         }`}
                                                     disabled={currentFlashcardIndex === 0}
                                                 >
@@ -688,7 +688,7 @@ const DocumentSessionPage = () => {
                                                     <span className="text-sm font-medium hidden md:block">Previous</span>
                                                 </button>
 
-                                                <div className="text-gray-900 font-bold font-mono text-lg tracking-wider bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
+                                                <div className="text-white font-bold font-mono text-lg tracking-wider bg-gray-700 px-4 py-2 rounded-lg shadow-sm border border-gray-600">
                                                     {currentFlashcardIndex + 1} <span className="text-gray-300 font-light">/</span> {session.flashcards.length}
                                                 </div>
 
@@ -698,8 +698,8 @@ const DocumentSessionPage = () => {
                                                         handleFlashcardNavigation('next');
                                                     }}
                                                     className={`p-4 rounded-full transition-all duration-200 flex items-center gap-2 ${currentFlashcardIndex === session.flashcards.length - 1
-                                                        ? 'text-gray-300 cursor-not-allowed'
-                                                        : 'text-gray-700 hover:bg-white hover:shadow-md hover:text-indigo-600 bg-white/50 border border-transparent hover:border-gray-100'
+                                                        ? 'text-gray-500 cursor-not-allowed'
+                                                        : 'text-gray-200 hover:bg-gray-700 hover:shadow-md hover:text-indigo-400 bg-gray-800/50 border border-transparent hover:border-gray-600'
                                                         }`}
                                                     disabled={currentFlashcardIndex === session.flashcards.length - 1}
                                                 >
@@ -720,20 +720,20 @@ const DocumentSessionPage = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full overflow-y-auto"
+                                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full overflow-y-auto"
                             >
-                                <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-cyan-50 to-blue-50">
+                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20">
                                     <div>
-                                        <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
+                                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
                                             <HelpCircle className="h-5 w-5 text-blue-600" />
                                             <span>Quiz</span>
                                         </h3>
-                                        <p className="text-sm text-gray-600">Test your knowledge of the document</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Test your knowledge of the document</p>
                                     </div>
                                     <div className="flex items-center space-x-3">
                                         {/* Difficulty badge for existing quiz */}
                                         {session?.quiz?.difficulty && (
-                                            <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded-full">
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
                                                 Current: <span className="font-medium capitalize">{session.quiz.difficulty}</span>
                                             </span>
                                         )}
@@ -741,7 +741,7 @@ const DocumentSessionPage = () => {
                                         <select
                                             value={selectedDifficulty}
                                             onChange={(e) => setSelectedDifficulty(e.target.value)}
-                                            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             disabled={quizMutation.isLoading}
                                         >
                                             <option value="easiest">⭐ Easiest</option>
@@ -765,8 +765,8 @@ const DocumentSessionPage = () => {
                                 {(!session?.quiz?.questions || session.quiz.questions.length === 0) ? (
                                     <div className="p-12 text-center">
                                         <HelpCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Quiz Yet</h3>
-                                        <p className="text-gray-500 mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Quiz Yet</h3>
+                                        <p className="text-gray-500 dark:text-gray-400 mb-4">
                                             {session.detailed_summary
                                                 ? 'Generate a quiz to test your understanding'
                                                 : 'Generate a summary first, then create a quiz'}
@@ -787,10 +787,10 @@ const DocumentSessionPage = () => {
                                         {/* Current Question */}
                                         <div className="mb-6">
                                             <div className="flex items-center justify-between mb-4">
-                                                <span className="text-sm text-gray-500">
+                                                <span className="text-sm text-gray-500 dark:text-gray-400">
                                                     Question {currentQuizIndex + 1} of {session.quiz.questions.length}
                                                 </span>
-                                                <div className="h-2 flex-1 mx-4 bg-gray-200 rounded-full overflow-hidden">
+                                                <div className="h-2 flex-1 mx-4 bg-gray-700 rounded-full overflow-hidden">
                                                     <div
                                                         className="h-full bg-blue-600 transition-all"
                                                         style={{ width: `${((currentQuizIndex + 1) / session.quiz.questions.length) * 100}%` }}
@@ -798,7 +798,7 @@ const DocumentSessionPage = () => {
                                                 </div>
                                             </div>
 
-                                            <h4 className="text-lg font-medium text-gray-900 mb-4">
+                                            <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                                                 {session.quiz.questions[currentQuizIndex].question}
                                             </h4>
 
@@ -808,8 +808,8 @@ const DocumentSessionPage = () => {
                                                         key={idx}
                                                         onClick={() => handleQuizAnswer(currentQuizIndex, idx)}
                                                         className={`w-full text-left p-4 rounded-lg border-2 transition-all ${selectedAnswers[currentQuizIndex] === idx
-                                                            ? 'border-blue-600 bg-blue-50'
-                                                            : 'border-gray-200 hover:border-gray-300'
+                                                            ? 'border-blue-500 bg-blue-900/20'
+                                                            : 'border-gray-600 text-gray-200 hover:border-gray-400'
                                                             }`}
                                                     >
                                                         <span className="font-medium mr-2">
@@ -865,8 +865,8 @@ const DocumentSessionPage = () => {
                                                     {calculateQuizScore()}/{session.quiz.questions.length}
                                                 </span>
                                             </div>
-                                            <h3 className="text-xl font-semibold text-gray-900">Quiz Complete!</h3>
-                                            <p className="text-gray-500">
+                                            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Quiz Complete!</h3>
+                                            <p className="text-gray-500 dark:text-gray-400">
                                                 You scored {Math.round((calculateQuizScore() / session.quiz.questions.length) * 100)}%
                                             </p>
                                         </div>
@@ -874,7 +874,7 @@ const DocumentSessionPage = () => {
                                         {/* Review Answers */}
                                         <div className="space-y-4 max-h-96 overflow-y-auto">
                                             {session.quiz.questions.map((q, idx) => (
-                                                <div key={idx} className="p-4 rounded-lg border border-gray-200">
+                                                <div key={idx} className="p-4 rounded-lg border border-gray-600 bg-gray-700/30">
                                                     <div className="flex items-start space-x-3">
                                                         {selectedAnswers[idx] === q.correct_answer ? (
                                                             <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
@@ -882,8 +882,8 @@ const DocumentSessionPage = () => {
                                                             <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
                                                         )}
                                                         <div className="flex-1">
-                                                            <p className="font-medium text-gray-900">{q.question}</p>
-                                                            <p className="text-sm text-gray-600 mt-1">
+                                                            <p className="font-medium text-gray-900 dark:text-white">{q.question}</p>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                                                 Your answer: {q.options[selectedAnswers[idx]] || 'Not answered'}
                                                             </p>
                                                             {selectedAnswers[idx] !== q.correct_answer && (
@@ -892,7 +892,7 @@ const DocumentSessionPage = () => {
                                                                 </p>
                                                             )}
                                                             {q.explanation && (
-                                                                <p className="text-sm text-gray-500 mt-2 italic">
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 italic">
                                                                     {q.explanation}
                                                                 </p>
                                                             )}
@@ -926,43 +926,29 @@ const DocumentSessionPage = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full overflow-y-auto"
+                                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden h-full overflow-y-auto"
                             >
-                                <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-pink-50 to-purple-50">
+                                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20">
                                     <div>
-                                        <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
+                                        <h3 className="font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
                                             <Presentation className="h-5 w-5 text-purple-600" />
                                             <span>Presentation Slides</span>
                                         </h3>
-                                        <p className="text-sm text-gray-600">AI-generated visual slides from the document</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">AI-generated visual slides from the document</p>
                                     </div>
-                                    {session.slides_status !== 'processing' && (
-                                        <button
-                                            onClick={() => slidesMutation.mutate()}
-                                            disabled={slidesMutation.isLoading}
-                                            className="btn-outline flex items-center space-x-2"
-                                        >
-                                            {slidesMutation.isLoading ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                session.slides_pdf_url ? <RefreshCw className="h-4 w-4" /> : <Plus className="h-4 w-4" />
-                                            )}
-                                            <span>{session.slides_pdf_url ? 'Regenerate' : 'Generate'}</span>
-                                        </button>
-                                    )}
                                 </div>
 
                                 {session.slides_status === 'processing' ? (
                                     <div className="p-12 text-center">
                                         <Loader2 className="h-12 w-12 text-purple-600 animate-spin mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Generating Slides...</h3>
-                                        <p className="text-gray-500">This may take a few minutes. Please wait.</p>
+                                        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Generating Slides...</h3>
+                                        <p className="text-gray-500 dark:text-gray-400">This may take a few minutes. Please wait.</p>
                                     </div>
                                 ) : !session.slides_pdf_url && !session.generated_slide_images?.length ? (
                                     <div className="p-12 text-center">
                                         <FileImage className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Slides Yet</h3>
-                                        <p className="text-gray-500 mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Slides Yet</h3>
+                                        <p className="text-gray-500 dark:text-gray-400 mb-4">
                                             {session.detailed_summary
                                                 ? 'Generate visual presentation slides'
                                                 : 'Generate a summary first, then create slides'}
@@ -984,7 +970,7 @@ const DocumentSessionPage = () => {
                                         {session.generated_slide_images?.length > 0 && (
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                                 {session.generated_slide_images.map((imageUrl, idx) => (
-                                                    <div key={idx} className="rounded-lg overflow-hidden shadow-md bg-gray-100">
+                                                    <div key={idx} className="rounded-lg overflow-hidden shadow-md bg-gray-700">
                                                         <img
                                                             src={getFullUrl(imageUrl)}
                                                             alt={`Slide ${idx + 1}`}
@@ -999,19 +985,31 @@ const DocumentSessionPage = () => {
                                             </div>
                                         )}
 
-                                        {/* Download PDF */}
+                                        {/* Download PDF & Regenerate */}
                                         {session.slides_pdf_url && (
-                                            <div className="flex justify-center">
+                                            <div className="flex gap-4 justify-center mt-6">
                                                 <a
                                                     href={getFullUrl(session.slides_pdf_url)}
                                                     download={`presentation-${sessionId}.pdf`}
-                                                    className="btn-primary flex items-center space-x-2"
+                                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                 >
-                                                    <Download className="h-4 w-4" />
+                                                    <Download className="h-5 w-5" />
                                                     <span>Download PDF</span>
                                                 </a>
+                                                <button
+                                                    onClick={() => slidesMutation.mutate()}
+                                                    disabled={slidesMutation.isLoading}
+                                                    className="px-6 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                                                >
+                                                    {slidesMutation.isLoading ? (
+                                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                                    ) : (
+                                                        <RefreshCw className="h-5 w-5" />
+                                                    )}
+                                                    <span>Regenerate</span>
+                                                </button>
                                             </div>
                                         )}
                                     </div>

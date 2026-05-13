@@ -52,26 +52,26 @@ const TeacherReviewsPage = () => {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Your Reviews</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white\">Your Reviews</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             See what your students are saying about you
           </p>
         </div>
 
         {/* Overall Stats */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Average Rating */}
             <div className="text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                <span className="text-5xl font-bold text-gray-900">{averageRating}</span>
+                <span className="text-5xl font-bold text-gray-900 dark:text-white">{averageRating}</span>
                 <Star className="h-8 w-8 fill-yellow-400 text-yellow-400" />
               </div>
-              <p className="text-gray-600">Based on {totalReviews} reviews</p>
+              <p className="text-gray-600 dark:text-gray-400">Based on {totalReviews} reviews</p>
               <div className="flex items-center justify-center md:justify-start gap-1 mt-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
@@ -94,8 +94,8 @@ const TeacherReviewsPage = () => {
                 
                 return (
                   <div key={rating} className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600 w-12">{rating} star</span>
-                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 w-12">{rating} star</span>
+                    <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-yellow-400"
                         style={{ width: `${percentage}%` }}
@@ -116,7 +116,7 @@ const TeacherReviewsPage = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filter === 'all'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             All ({totalReviews})
@@ -128,7 +128,7 @@ const TeacherReviewsPage = () => {
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filter === `${rating}star${rating > 1 ? 's' : ''}`
                   ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               {rating} ⭐ ({ratingDistribution[rating]})
@@ -138,12 +138,12 @@ const TeacherReviewsPage = () => {
 
         {/* Reviews List */}
         {filteredReviews.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-12 text-center">
             <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {filter === 'all' ? 'No reviews yet' : 'No reviews match this filter'}
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               {filter === 'all' 
                 ? 'Reviews from your students will appear here after completed sessions'
                 : 'Try selecting a different rating filter'}
@@ -152,7 +152,7 @@ const TeacherReviewsPage = () => {
         ) : (
           <div className="space-y-4">
             {filteredReviews.map((review) => (
-              <div key={review.id} className="bg-white rounded-lg shadow-sm p-6">
+              <div key={review.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <div className="flex items-start gap-4">
                   {/* Student Avatar */}
                   {review.student_avatar ? (
@@ -171,7 +171,7 @@ const TeacherReviewsPage = () => {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
                           {review.student_name}
                         </h3>
                         <div className="flex items-center gap-1 mt-1">
@@ -185,12 +185,12 @@ const TeacherReviewsPage = () => {
                               }`}
                             />
                           ))}
-                          <span className="ml-2 text-sm text-gray-600 font-medium">
+                          <span className="ml-2 text-sm text-gray-600 dark:text-gray-400 font-medium">
                             {review.rating}.0
                           </span>
                         </div>
                       </div>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
                         {new Date(review.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -198,7 +198,7 @@ const TeacherReviewsPage = () => {
                         })}
                       </span>
                     </div>
-                    <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{review.comment}</p>
                   </div>
                 </div>
               </div>

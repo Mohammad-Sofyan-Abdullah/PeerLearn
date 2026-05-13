@@ -8,6 +8,9 @@ from app.ai_service import ai_service
 from app.models import UserInDB
 from app.config import settings
 from bson import ObjectId
+import json
+import logging
+import asyncio
 from datetime import datetime
 from jose import JWTError, jwt
 from pathlib import Path
@@ -356,6 +359,64 @@ async def send_message(
         'sender_avatar': current_user.avatar
     }, room=str(room_id))
     
+    # Check for AI mention
+    if message_data.content and "@AI" in message_data.content.upper():
+        async def process_ai_mention():
+            try:
+                # Get recent conversation context
+                recent_messages = await db.messages.find({
+                    "room_id": room_object_id, "deleted": False
+                }).sort("timestamp", -1).limit(10).to_list(length=10)
+                
+                context = []
+                for msg in reversed(recent_messages):
+                    context.append({
+                        "content": msg["content"],
+                        "is_ai_response": msg.get("is_ai_response", False)
+                    })
+                
+                # Generate AI response
+                ai_response = await ai_service.respond_to_ai_mention(message_data.content, context)
+                
+                # Create AI response message
+                ai_message_dict = {
+                    "room_id": room_object_id,
+                    "sender_id": "AI",
+                    "content": ai_response,
+                    "message_type": "ai_response",
+                    "is_ai_response": True,
+                    "timestamp": datetime.utcnow(),
+                    "edited": False,
+                    "deleted": False
+                }
+                
+                ai_result = await db.messages.insert_one(ai_message_dict)
+                ai_message_id = ai_result.inserted_id
+                
+                ai_created_message = await db.messages.find_one({"_id": ai_message_id})
+                ai_message_obj = Message(**ai_created_message)
+                
+                ai_broadcast_dict = ai_message_obj.dict()
+                ai_broadcast_dict['id'] = str(ai_message_obj.id)
+                ai_broadcast_dict['_id'] = str(ai_message_obj.id)
+                ai_broadcast_dict['room_id'] = str(ai_message_obj.room_id)
+                ai_broadcast_dict['sender_id'] = "AI"
+                ai_broadcast_dict['timestamp'] = ai_message_obj.timestamp.isoformat() if ai_message_obj.timestamp else None
+                ai_broadcast_dict['is_ai_response'] = True
+                ai_broadcast_dict['message_type'] = 'ai_response'
+                
+                await sio.emit('new_message', {
+                    'message': ai_broadcast_dict,
+                    'sender_name': "PeerLearn AI",
+                    'sender_avatar': ""
+                }, room=str(room_id))
+                
+            except Exception as e:
+                logger.error(f"Error handling AI mention in classroom: {e}")
+                
+        # Run AI processing in the background
+        asyncio.create_task(process_ai_mention())
+            
     return message_obj
 
 @router.put("/messages/{message_id}", response_model=Message)

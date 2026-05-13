@@ -329,11 +329,13 @@ class YouTubeSession(YouTubeSessionBase):
 class MessageBase(BaseModel):
     content: str = ""
     room_id: Optional[PyObjectId] = None  # Optional: endpoint overrides from URL param
-    message_type: str = "text"  # "text", "file", "voice"
+    message_type: str = "text"  # "text", "file", "voice", "shared_content", "ai_response"
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     file_type: Optional[str] = None
     file_size: Optional[int] = None
+    shared_content: Optional[Dict[str, Any]] = None  # For shared session cards
+    is_ai_response: bool = False
 
 class MessageCreate(MessageBase):
     pass
@@ -361,6 +363,8 @@ class Message(MessageBase):
     edited: bool = False
     deleted: bool = False
     edited_at: Optional[datetime] = None
+    sender_name: Optional[str] = None
+    sender_avatar: Optional[str] = None
 
     class Config:
         allow_population_by_field_name = True

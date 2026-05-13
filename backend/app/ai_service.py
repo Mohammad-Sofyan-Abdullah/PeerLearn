@@ -66,6 +66,60 @@ class AIService:
                 "confidence": 0.0
             }
 
+    async def respond_to_ai_mention(self, user_message: str, context: list = None) -> str:
+        """Respond to an @AI mention in a chat message"""
+        try:
+            # Strip the @AI prefix and get the actual question
+            question = user_message
+            for prefix in ["@AI ", "@ai ", "@AI\n", "@ai\n"]:
+                question = question.replace(prefix, "")
+            question = question.strip()
+            if not question:
+                question = "Hello! How can I help?"
+
+            # Build context messages from conversation history
+            messages = [
+                {
+                    "role": "system",
+                    "content": """You are PeerLearn AI, a helpful educational assistant embedded in a student chat. 
+You help students with academic questions, explanations, study tips, and learning guidance.
+
+Guidelines:
+- Be concise and clear (2-4 paragraphs max)
+- Use **bold** for key terms
+- Use bullet points for lists
+- Be encouraging and educational
+- Focus on accuracy and helpfulness
+- If asked about a specific topic, give a clear, structured explanation"""
+                }
+            ]
+
+            # Add recent conversation context
+            if context:
+                for msg in context[-6:]:  # Last 6 messages for context
+                    role = "assistant" if msg.get("is_ai_response") else "user"
+                    content = msg.get("content", "")
+                    if content:
+                        messages.append({"role": role, "content": content})
+
+            # Ensure the final user message is the @AI query
+            messages.append({"role": "user", "content": question})
+
+            response = self.client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=messages,
+                temperature=0.5,
+                max_tokens=800
+            )
+
+            return response.choices[0].message.content.strip()
+
+        except Exception as e:
+            logger.error(f"Error in AI response: {e}")
+            return "I'm sorry, I'm having trouble responding right now. Please try again in a moment."
+
+
+
     async def summarize_chat(self, messages: List[Dict[str, Any]], room_name: str) -> str:
         """Summarize chat messages into study notes"""
         try:
@@ -1310,6 +1364,76 @@ Create a comprehensive multiple-choice quiz to test understanding of this docume
 
 
 
+    async def get_teacher_research_plan(
+        self,
+        topic: str,
+        conversation_history: list,
+    ) -> str:
+        """
+        Teacher-facing research and lecture planning assistant.
+        Returns an HTML response with two parts:
+          1. Teaching resources (papers, textbooks, video courses)
+          2. A structured Lecture Delivery Plan (session breakdown, learning
+             objectives, teaching order, assessments, common misconceptions).
+        """
+        history_messages = [
+            {"role": msg["role"], "content": msg["content"]}
+            for msg in (conversation_history or [])[-6:]
+        ]
+
+        system_prompt = (
+            "You are an expert academic curriculum designer and research assistant for university and school teachers.\n\n"
+            "When a teacher gives you a topic, provide two things:\n\n"
+            "PART 1 — RESOURCES (use clean HTML, no markdown):\n"
+            "<h2>\U0001f4da Teaching Resources</h2>\n\n"
+            "<h3>Research Papers &amp; Academic Sources</h3>\n"
+            "<ul><li><strong>Title</strong> — brief description and where to find it (arXiv, Google Scholar, JSTOR)</li></ul>\n\n"
+            "<h3>Recommended Textbooks</h3>\n"
+            "<ul><li><strong>Book Title</strong> by Author — why it's suitable for teaching this topic, free access if available</li></ul>\n\n"
+            "<h3>Video Resources &amp; Online Courses</h3>\n"
+            "<ul><li><strong>Course/Playlist Name</strong> — Platform (YouTube/Coursera/MIT OCW/Khan Academy), why recommended for teaching</li></ul>\n\n"
+            "PART 2 — LECTURE DELIVERY PLAN:\n"
+            "<h2>\U0001f393 Lecture Delivery Plan</h2>\n\n"
+            "<h3>Suggested Session Breakdown</h3>\n"
+            "<ol>\n"
+            "<li><strong>Session 1:</strong> [Topic] — [Key concepts to cover] — Estimated time: [X] minutes</li>\n"
+            "</ol>\n"
+            "(provide 4-6 sessions)\n\n"
+            "<h3>Learning Objectives</h3>\n"
+            "<ul><li>By end of this module, students should be able to...</li></ul>\n\n"
+            "<h3>Recommended Teaching Order</h3>\n"
+            "<p>Explain the logical progression from foundational to advanced concepts</p>\n\n"
+            "<h3>Assessment Ideas</h3>\n"
+            "<ul><li><strong>Type:</strong> description of quiz/assignment/project idea</li></ul>\n\n"
+            "<h3>Common Student Misconceptions</h3>\n"
+            "<ul><li>What students typically struggle with and how to address it</li></ul>\n\n"
+            "Be specific and practical. Tailor everything for a university or secondary school teacher preparing their curriculum. "
+            "Do not use markdown — use only HTML tags. Do not wrap in code blocks."
+        )
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            *history_messages,
+            {"role": "user", "content": f"Help me research and plan my lectures on: {topic}"},
+        ]
+
+        try:
+            response = self.client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=messages,
+                max_tokens=2000,
+                temperature=0.4,
+            )
+            html = (response.choices[0].message.content or "").strip()
+            # Strip accidental markdown fences
+            if html.startswith("```"):
+                html = html.split("\n", 1)[-1]
+                html = html.rsplit("```", 1)[0]
+            return html.strip()
+        except Exception as e:
+            logger.error(f"Error generating teacher research plan: {e}")
+            return "<p>Unable to generate a research plan at this time. Please try again later.</p>"
+
     async def get_resource_recommendations(
         self,
         query: str,
@@ -1378,5 +1502,45 @@ Create a comprehensive multiple-choice quiz to test understanding of this docume
         except Exception as e:
             logger.error(f"Error generating resource recommendations: {e}")
             return "<p>Unable to generate recommendations at this time. Please try again later.</p>"
+
+    async def summarize_search_results(self, query: str, contexts: list) -> str:
+        """
+        Generate a concise plain-English summary of what a student's notes
+        contain about the searched topic.  Called by the Outer RAG search
+        endpoint after gathering per-document snippets.
+        """
+        # Cap at 5 documents to keep the prompt within token limits
+        context_text = "\n\n---\n\n".join(contexts[:5])
+
+        prompt = f"""A student searched their notes for: "{query}"
+
+Here are the relevant sections found across their documents:
+
+{context_text}
+
+In 2-3 sentences, summarize what information the student has in their notes about this topic. \
+Be specific about what documents contain and helpful about what they can learn from them. \
+Do not use markdown. Write in plain conversational English."""
+
+        try:
+            response = self.client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a helpful study assistant that summarizes "
+                            "search results from a student's personal notes."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=200,
+                temperature=0.3,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error(f"Error generating search summary: {e}")
+            return None
 
 ai_service = AIService()

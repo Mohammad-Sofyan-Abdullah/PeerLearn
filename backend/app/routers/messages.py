@@ -175,11 +175,29 @@ async def get_messages(
         logger.info(f"Processing {len(messages)} messages")
         for msg in reversed(messages):  # Reverse to show chronological order
             logger.info(f"Processing message: {msg}")
-            # Get sender details
-            sender = await db.users.find_one({"_id": ObjectId(str(msg["sender_id"]))})
-            if not sender:
-                sender = await db.users.find_one({"_id": str(msg["sender_id"])})
-            
+            # Get sender details — handle special "AI" sender
+            sender_id_raw = str(msg.get("sender_id", ""))
+            if sender_id_raw == "AI" or msg.get("is_ai_response"):
+                sender_info = {
+                    "id": "AI",
+                    "username": "PeerLearn AI",
+                    "full_name": "PeerLearn AI",
+                    "avatar": ""
+                }
+            else:
+                try:
+                    sender = await db.users.find_one({"_id": ObjectId(sender_id_raw)})
+                    if not sender:
+                        sender = await db.users.find_one({"_id": sender_id_raw})
+                except Exception:
+                    sender = None
+                sender_info = {
+                    "id": str(sender["_id"]) if sender else sender_id_raw,
+                    "username": sender.get("username", "") if sender else "Unknown",
+                    "full_name": sender.get("full_name", sender.get("name", "Unknown")) if sender else "Unknown",
+                    "avatar": sender.get("avatar", "") if sender else ""
+                }
+
             message_data = {
                 "id": str(msg["_id"]),
                 "content": msg["content"],
@@ -191,13 +209,8 @@ async def get_messages(
                 "shared_content": msg.get("shared_content"),
                 "timestamp": msg["timestamp"],
                 "is_read": msg["is_read"],
-                "sender": {
-                    "id": str(sender["_id"]) if sender else msg["sender_id"],
-                    "username": sender.get("username", "") if sender else "Unknown",
-                    "full_name": sender.get("full_name", "") if sender else "Unknown",
-                    "avatar": sender.get("avatar", "") if sender else ""
-                },
-                "is_own_message": str(msg["sender_id"]) == user_id_str
+                "sender": sender_info,
+                "is_own_message": sender_id_raw == user_id_str
             }
             logger.info(f"Formatted message data: {message_data}")
             result.append(message_data)

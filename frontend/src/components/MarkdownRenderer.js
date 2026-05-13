@@ -19,16 +19,16 @@ const MarkdownRenderer = ({ content, className = '' }) => {
             <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2 mt-3" {...props} />
           ),
           p: ({ node, ...props }) => (
-            <p className="text-gray-700 dark:text-gray-300 mb-3 leading-relaxed" {...props} />
+            <p className="text-gray-700 dark:text-gray-300 mb-2 leading-relaxed" {...props} />
           ),
           ul: ({ node, ...props }) => (
-            <ul className="list-disc list-inside space-y-1 mb-3 text-gray-700 dark:text-gray-300 pl-2" {...props} />
+            <ul className="list-disc list-outside space-y-1 mb-3 text-gray-700 dark:text-gray-300 ml-5" {...props} />
           ),
           ol: ({ node, ...props }) => (
-            <ol className="list-decimal list-inside space-y-1 mb-3 text-gray-700 dark:text-gray-300 pl-2" {...props} />
+            <ol className="list-decimal list-outside space-y-1 mb-3 text-gray-700 dark:text-gray-300 ml-5" {...props} />
           ),
           li: ({ node, ...props }) => (
-            <li className="leading-relaxed" {...props} />
+            <li className="leading-relaxed mb-1" {...props} />
           ),
           strong: ({ node, ...props }) => (
             <strong className="font-semibold text-gray-900 dark:text-gray-100" {...props} />
@@ -97,12 +97,12 @@ export const MarkdownRendererLight = ({ content, className = '' }) => {
             <p className="text-white mb-2 leading-relaxed" {...props} />
           ),
           ul: ({ node, ...props }) => (
-            <ul className="list-disc list-inside space-y-1 mb-2 text-white pl-2" {...props} />
+            <ul className="list-disc list-outside space-y-1 mb-2 text-white ml-5" {...props} />
           ),
           ol: ({ node, ...props }) => (
-            <ol className="list-decimal list-inside space-y-1 mb-2 text-white pl-2" {...props} />
+            <ol className="list-decimal list-outside space-y-1 mb-2 text-white ml-5" {...props} />
           ),
-          li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
+          li: ({ node, ...props }) => <li className="leading-relaxed mb-1" {...props} />,
           strong: ({ node, ...props }) => (
             <strong className="font-semibold text-white" {...props} />
           ),

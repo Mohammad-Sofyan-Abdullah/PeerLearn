@@ -277,6 +277,17 @@ const DocumentEditorPage = () => {
           element = document.createElement('mark');
           if (value) element.style.backgroundColor = value;
           break;
+        case 'fontName':
+          element = document.createElement('span');
+          if (value) element.style.fontFamily = value;
+          break;
+        case 'fontSize':
+          element = document.createElement('span');
+          if (value) {
+            const sizeMap = { 1: '12px', 2: '14px', 3: '16px', 4: '18px', 5: '20px', 6: '24px', 7: '28px' };
+            element.style.fontSize = sizeMap[value] || '16px';
+          }
+          break;
         default:
           return;
       }
@@ -670,9 +681,14 @@ const DocumentEditorPage = () => {
                   value={fontSize}
                   onMouseDown={(e) => e.preventDefault()}
                   onChange={(e) => {
-                    setFontSize(e.target.value);
-                    if (editorRef.current) {
-                      editorRef.current.style.fontSize = `${e.target.value}px`;
+                    const value = e.target.value;
+                    setFontSize(value);
+                    const selection = window.getSelection();
+                    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+                      const sizeMap = { '12': 1, '14': 2, '16': 3, '18': 4, '20': 5, '24': 6 };
+                      applyFormatting('fontSize', sizeMap[value] || 3);
+                    } else if (editorRef.current) {
+                      editorRef.current.style.fontSize = `${value}px`;
                     }
                   }}
                   className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
@@ -688,9 +704,13 @@ const DocumentEditorPage = () => {
                   value={fontFamily}
                   onMouseDown={(e) => e.preventDefault()}
                   onChange={(e) => {
-                    setFontFamily(e.target.value);
-                    if (editorRef.current) {
-                      editorRef.current.style.fontFamily = e.target.value;
+                    const value = e.target.value;
+                    setFontFamily(value);
+                    const selection = window.getSelection();
+                    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+                      applyFormatting('fontName', value);
+                    } else if (editorRef.current) {
+                      editorRef.current.style.fontFamily = value;
                     }
                   }}
                   className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from 'react-query';
@@ -22,7 +22,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { friendsAPI } from '../utils/api';
+import { friendsAPI, messagesAPI } from '../utils/api';
 import LoadingSpinner from './LoadingSpinner';
 import Button from './Button';
 
@@ -47,11 +47,44 @@ const Layout = () => {
     }
   );
 
+  const previousUnreadCount = useRef(-1);
+
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   const { data: unreadCount = 0 } = useQuery(
     'unread-messages-count',
-    async () => 0,
+    async () => {
+      try {
+        const res = await messagesAPI.getConversations();
+        const count = res.data.reduce((total, conv) => total + (conv.unread_count || 0), 0);
+        
+        // Show desktop notification if count increases
+        if (count > previousUnreadCount.current && previousUnreadCount.current !== -1) {
+          if ('Notification' in window && Notification.permission === 'granted') {
+             const conversationsWithUnread = res.data.filter(c => c.unread_count > 0);
+             if (conversationsWithUnread.length > 0) {
+                // Get the conversation with the most recent updated_at
+                conversationsWithUnread.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+                const latest = conversationsWithUnread[0];
+                new Notification(`New message from ${latest.other_user.full_name}`, {
+                   body: latest.last_message_content || 'You have a new message',
+                   icon: '/favicon.ico'
+                });
+             }
+          }
+        }
+        previousUnreadCount.current = count;
+        return count;
+      } catch (err) {
+        return 0;
+      }
+    },
     {
-      refetchInterval: 10000,
+      refetchInterval: 5000,
       enabled: !!user
     }
   );

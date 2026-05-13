@@ -822,27 +822,30 @@ const DocumentSessionPage = () => {
                                         </div>
 
                                         {/* Navigation */}
-                                        <div className="flex items-center justify-between">
-                                            <button
+                                        <div className="flex items-center justify-between mt-6">
+                                            <StyledButton
                                                 onClick={() => setCurrentQuizIndex(prev => Math.max(0, prev - 1))}
                                                 disabled={currentQuizIndex === 0}
-                                                className="btn-outline"
+                                                variant="outline"
+                                                leftIcon={<ChevronLeft className="h-4 w-4" />}
                                             >
                                                 Previous
-                                            </button>
+                                            </StyledButton>
                                             {currentQuizIndex === session.quiz.questions.length - 1 ? (
                                                 <StyledButton
                                                     onClick={() => setShowQuizResults(true)}
+                                                    rightIcon={<CheckCircle className="h-4 w-4" />}
                                                 >
                                                     Submit Quiz
                                                 </StyledButton>
                                             ) : (
-                                                <button
+                                                <StyledButton
                                                     onClick={() => setCurrentQuizIndex(prev => prev + 1)}
-                                                    className="btn-primary"
+                                                    variant="primary"
+                                                    rightIcon={<ChevronRight className="h-4 w-4" />}
                                                 >
                                                     Next
-                                                </button>
+                                                </StyledButton>
                                             )}
                                         </div>
                                     </div>
@@ -903,16 +906,16 @@ const DocumentSessionPage = () => {
                                         </div>
 
                                         <div className="mt-6 flex justify-center">
-                                            <button
+                                            <StyledButton
                                                 onClick={() => {
                                                     setShowQuizResults(false);
                                                     setSelectedAnswers({});
                                                     setCurrentQuizIndex(0);
                                                 }}
-                                                className="btn-primary"
+                                                leftIcon={<RefreshCw className="h-4 w-4" />}
                                             >
                                                 Retake Quiz
-                                            </button>
+                                            </StyledButton>
                                         </div>
                                     </div>
                                 )}
@@ -1025,8 +1028,12 @@ const DocumentSessionPage = () => {
                         isOpen={showShareModal}
                         onClose={() => setShowShareModal(false)}
                         contentType={shareContentType}
-                        contentId={sessionId}
-                        contentTitle={session.document_title}
+                        contentData={{
+                            title: session.document_title || 'Document Session',
+                            source_id: sessionId,
+                            source_url: `/notes/session/${sessionId}`,
+                            description: session.short_summary || 'Interactive document session with AI'
+                        }}
                     />
                 )}
 

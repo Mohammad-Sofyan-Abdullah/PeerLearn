@@ -122,6 +122,9 @@ const ShareToFriendModal = ({ isOpen, onClose, contentType, contentData }) => {
     const getIcon = () => {
         switch (contentType) {
             case 'youtube_summary': case 'youtube_video': return <Youtube className="w-5 h-5 text-red-500" />;
+            case 'youtube_session': return <Youtube className="w-5 h-5 text-red-600" />;
+            case 'document_session': return <FileText className="w-5 h-5 text-green-600" />;
+            case 'document_quiz': return <BookOpen className="w-5 h-5 text-amber-600" />;
             case 'flashcards': return <BookOpen className="w-5 h-5 text-purple-500" />;
             case 'slides': return <Layers className="w-5 h-5 text-blue-500" />;
             case 'notes': return <FileText className="w-5 h-5 text-green-500" />;
@@ -134,6 +137,9 @@ const ShareToFriendModal = ({ isOpen, onClose, contentType, contentData }) => {
         switch (contentType) {
             case 'youtube_summary': return 'YouTube Summary';
             case 'youtube_video': return 'YouTube Video';
+            case 'youtube_session': return 'YouTube Session';
+            case 'document_session': return 'Document Session';
+            case 'document_quiz': return 'Document Quiz';
             case 'flashcards': return 'Flashcards';
             case 'slides': return 'Slides';
             case 'notes': return 'Notes';

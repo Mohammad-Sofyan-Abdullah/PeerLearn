@@ -27,7 +27,7 @@ import {
   Share2,
   PlayCircle
 } from 'lucide-react';
-import { messagesAPI, friendsAPI, youtubeAPI } from '../utils/api';
+import { messagesAPI, friendsAPI, youtubeAPI, notesAPI } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import Button from '../components/Button';
@@ -119,7 +119,6 @@ const MessagesPage = () => {
       enabled: !!conversationId,
       refetchInterval: 3000, // Poll for new messages every 3 seconds
       select: (response) => {
-        console.log('Raw messages response:', response);
         const data = response.data;
 
         // Filter out any error objects that might be in the response
@@ -134,7 +133,6 @@ const MessagesPage = () => {
             }
             return true;
           });
-          console.log('Filtered messages:', filteredData);
           return filteredData;
         }
 
@@ -427,15 +425,24 @@ const MessagesPage = () => {
 
       try {
         toast.loading('Importing session...', { id: 'import-session' });
-        const response = await youtubeAPI.importSession(sharedContent.source_id);
+        
+        const isDocumentSession = contentType === 'document_session' || contentType === 'document_quiz';
+        const importAPI = isDocumentSession ? notesAPI : youtubeAPI;
+        
+        const response = await importAPI.importSession(sharedContent.source_id);
         toast.dismiss('import-session');
+
+        const sessionId = response.data.already_owned ? sharedContent.source_id : response.data.session_id;
+        const targetUrl = isDocumentSession 
+            ? `/notes/session/${sessionId}`
+            : `/youtube-summarizer?session=${sessionId}`;
 
         if (response.data.already_owned) {
           toast.success('Opening your session...');
-          navigate(`/youtube-summarizer?session=${sharedContent.source_id}`);
+          navigate(targetUrl);
         } else if (response.data.already_imported || response.data.imported) {
           toast.success('Session imported! Opening...');
-          navigate(`/youtube-summarizer?session=${response.data.session_id}`);
+          navigate(targetUrl);
         }
       } catch (error) {
         toast.dismiss('import-session');
@@ -511,11 +518,11 @@ const MessagesPage = () => {
           </div>
         )}
 
-        {/* Import & Open Button for YouTube Sessions */}
-        {contentType === 'youtube_session' && sharedContent.source_id && (
+        {/* Import & Open Button for Sessions */}
+        {(contentType === 'youtube_session' || contentType === 'document_session' || contentType === 'document_quiz') && sharedContent.source_id && (
           <Button
             onClick={handleImportSession}
-            variant="danger" // Using danger since original was red, or define a new variant if needed, but danger usually maps to red
+            variant={contentType === 'youtube_session' ? 'danger' : 'primary'}
             className="w-full mt-2 justify-center"
             leftIcon={<Download className="w-4 h-4" />}
           >
@@ -524,7 +531,7 @@ const MessagesPage = () => {
         )}
 
         {/* Source Link */}
-        {sharedContent.source_url && contentType !== 'youtube_session' && (
+        {sharedContent.source_url && contentType !== 'youtube_session' && contentType !== 'document_session' && contentType !== 'document_quiz' && (
           <a
             href={sharedContent.source_url}
             target="_blank"
@@ -839,11 +846,8 @@ const MessagesPage = () => {
               return true;
             });
 
-            console.log('Valid messages to render:', validMessages);
-
             return validMessages.map((msg, index) => {
               try {
-                console.log('Rendering message:', msg);
                 return renderMessage(msg, index);
               } catch (error) {
                 console.error('Error rendering message:', error, msg);

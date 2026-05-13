@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
@@ -19,6 +20,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { messagesAPI } from '../utils/api';
 
 const TeacherLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,6 +29,48 @@ const TeacherLayout = () => {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const previousUnreadCount = useRef(-1);
+
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const { data: unreadCount = 0 } = useQuery(
+    'unread-messages-count-teacher',
+    async () => {
+      try {
+        const res = await messagesAPI.getConversations();
+        const count = res.data.reduce((total, conv) => total + (conv.unread_count || 0), 0);
+        
+        // Show desktop notification if count increases
+        if (count > previousUnreadCount.current && previousUnreadCount.current !== -1) {
+          if ('Notification' in window && Notification.permission === 'granted') {
+             const conversationsWithUnread = res.data.filter(c => c.unread_count > 0);
+             if (conversationsWithUnread.length > 0) {
+                // Get the conversation with the most recent updated_at
+                conversationsWithUnread.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+                const latest = conversationsWithUnread[0];
+                new Notification(`New message from ${latest.other_user.full_name}`, {
+                   body: latest.last_message_content || 'You have a new message',
+                   icon: '/favicon.ico'
+                });
+             }
+          }
+        }
+        previousUnreadCount.current = count;
+        return count;
+      } catch (err) {
+        return 0;
+      }
+    },
+    {
+      refetchInterval: 5000,
+      enabled: !!user
+    }
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -46,6 +90,11 @@ const TeacherLayout = () => {
 
   const isActive = (path) => location.pathname === path;
 
+  const getNotificationCount = (itemName) => {
+    if (itemName === 'Messages') return unreadCount;
+    return 0;
+  };
+
   const NavLink = ({ item, onClick }) => {
     const Icon = item.icon;
     const active = isActive(item.href);
@@ -63,6 +112,11 @@ const TeacherLayout = () => {
       >
         <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
         {item.name}
+        {getNotificationCount(item.name) > 0 && (
+          <span className="ml-auto inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+            {getNotificationCount(item.name)}
+          </span>
+        )}
       </Link>
     );
   };

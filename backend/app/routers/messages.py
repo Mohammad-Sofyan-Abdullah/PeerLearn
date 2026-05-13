@@ -129,6 +129,8 @@ async def create_or_get_conversation(
         
         return {"conversation_id": str(result.inserted_id)}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating conversation: {e}")
         raise HTTPException(
@@ -218,6 +220,8 @@ async def get_messages(
         logger.info(f"Returning {len(result)} formatted messages")
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting messages: {e}")
         raise HTTPException(
@@ -411,6 +415,8 @@ async def send_message(
             "message": "Message sent successfully"
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error sending message: {e}")
         raise HTTPException(
@@ -439,6 +445,8 @@ async def delete_message(
         
         return {"message": "Message deleted successfully"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error deleting message: {e}")
         raise HTTPException(

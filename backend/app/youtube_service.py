@@ -273,19 +273,17 @@ class YouTubeService:
                         'extract_flat': False,
                         'writethumbnail': False,
                         'writeinfojson': False,
-                        # User agent to avoid blocking
-                        'http_headers': {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                        }
                     }
                     
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([url])
+                        error_code = ydl.download([url])
+                        if error_code != 0:
+                            raise Exception(f"yt-dlp returned error code {error_code}")
                     
                     # Find the downloaded file
                     if os.path.exists(temp_dir):
                         for file in os.listdir(temp_dir):
-                            if file.startswith('audio'):
+                            if file.startswith('audio') and not file.endswith(('.part', '.ytdl')):
                                 file_path = os.path.join(temp_dir, file)
                                 logger.info(f"Found audio file: {file_path}")
                                 return file_path

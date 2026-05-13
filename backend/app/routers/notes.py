@@ -74,6 +74,48 @@ async def user_has_document_access(db, document: dict, user_id: str) -> bool:
     )
 
 
+async def clone_session_document_for_user(db, original_session: dict, session_id: str, current_user: UserInDB):
+    current_user_object_id = ObjectId(current_user.id)
+    existing_document = await db.documents.find_one({
+        "user_id": current_user_object_id,
+        "imported_from_session": session_id
+    })
+    
+    if existing_document:
+        return existing_document["_id"]
+    
+    original_document_id = original_session.get("document_id")
+    original_document = None
+    
+    if original_document_id:
+        original_document = await db.documents.find_one({"_id": original_document_id})
+    
+    document_title = (
+        original_document.get("title")
+        if original_document
+        else original_session.get("document_title")
+    ) or "Imported Document"
+    document_content = (
+        original_document.get("content")
+        if original_document
+        else original_session.get("document_content")
+    ) or ""
+    
+    new_document = {
+        "user_id": current_user_object_id,
+        "title": document_title,
+        "content": document_content,
+        "status": DocumentStatus.DRAFT,
+        "imported_from_session": session_id,
+        "original_document_id": str(original_document_id) if original_document_id else None,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.documents.insert_one(new_document)
+    return result.inserted_id
+
+
 @router.get("/documents", response_model=List[Document])
 async def get_user_documents(
     search: Optional[str] = None,
@@ -1644,16 +1686,39 @@ async def import_shared_document_session(
     })
     
     if existing_import:
+        imported_document_id = await clone_session_document_for_user(
+            db,
+            original_session,
+            session_id,
+            current_user
+        )
+        if str(existing_import.get("document_id")) != str(imported_document_id):
+            await db.document_sessions.update_one(
+                {"_id": existing_import["_id"]},
+                {
+                    "$set": {
+                        "document_id": imported_document_id,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
         return {
             "message": "Session already imported",
             "session_id": str(existing_import["_id"]),
             "already_imported": True
         }
     
+    imported_document_id = await clone_session_document_for_user(
+        db,
+        original_session,
+        session_id,
+        current_user
+    )
+    
     # Clone the session for the current user
     new_session = {
         "user_id": ObjectId(current_user.id),
-        "document_id": original_session.get("document_id"),
+        "document_id": imported_document_id,
         "document_title": original_session.get("document_title"),
         "document_content": original_session.get("document_content"),
         "short_summary": original_session.get("short_summary"),

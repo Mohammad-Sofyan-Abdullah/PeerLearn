@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { youtubeAPI } from '../utils/api';
+import { youtubeAPI, notesAPI } from '../utils/api';
 import { format } from 'date-fns';
 import { chatAPI } from '../utils/api';
 import { useSocket } from '../contexts/SocketContext';
@@ -429,6 +429,10 @@ const ChatInterface = ({ room, classroom, user }) => {
               return { icon: <Youtube className="w-4 h-4 text-red-500" />, bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800', label: 'YouTube Summary' };
             case 'youtube_session':
               return { icon: <PlayCircle className="w-4 h-4 text-red-600 dark:text-red-400" />, bgColor: 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/30 dark:to-orange-900/30', borderColor: 'border-red-300 dark:border-red-700', label: 'YouTube Session' };
+            case 'document_session':
+              return { icon: <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />, bgColor: 'bg-green-50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-800', label: 'Document Session' };
+            case 'document_quiz':
+              return { icon: <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />, bgColor: 'bg-amber-50 dark:bg-amber-900/20', borderColor: 'border-amber-200 dark:border-amber-800', label: 'Document Quiz' };
             case 'flashcards':
               return { icon: <BookOpen className="w-4 h-4 text-purple-500" />, bgColor: 'bg-purple-50 dark:bg-purple-900/20', borderColor: 'border-purple-200 dark:border-purple-800', label: 'Flashcards' };
             case 'slides':
@@ -446,14 +450,17 @@ const ChatInterface = ({ room, classroom, user }) => {
           if (!sharedContent.source_id) return toast.error('Session ID not available');
           try {
             toast.loading('Importing session...', { id: 'import-session' });
-            const response = await youtubeAPI.importSession(sharedContent.source_id);
+            const isDocumentSession = contentType === 'document_session' || contentType === 'document_quiz';
+            const response = await (isDocumentSession ? notesAPI : youtubeAPI).importSession(sharedContent.source_id);
             toast.dismiss('import-session');
+            const sessionId = response.data.already_owned ? sharedContent.source_id : response.data.session_id;
+            const targetUrl = isDocumentSession ? `/notes/session/${sessionId}` : `/youtube-summarizer?session=${sessionId}`;
             if (response.data.already_owned) {
               toast.success('Opening your session...');
-              navigate(`/youtube-summarizer?session=${sharedContent.source_id}`);
+              navigate(targetUrl);
             } else if (response.data.already_imported || response.data.imported) {
               toast.success('Session imported! Opening...');
-              navigate(`/youtube-summarizer?session=${response.data.session_id}`);
+              navigate(targetUrl);
             }
           } catch (error) {
             toast.dismiss('import-session');
@@ -475,12 +482,12 @@ const ChatInterface = ({ room, classroom, user }) => {
             <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">{sharedContent.title}</h4>
             {sharedContent.description && <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">{sharedContent.description}</p>}
             
-            {contentType === 'youtube_session' && sharedContent.source_id && (
-              <Button onClick={handleImportSession} variant="danger" className="w-full mt-2 justify-center" leftIcon={<Download className="w-4 h-4" />}>
+            {(contentType === 'youtube_session' || contentType === 'document_session' || contentType === 'document_quiz') && sharedContent.source_id && (
+              <Button onClick={handleImportSession} variant={contentType === 'youtube_session' ? 'danger' : 'primary'} className="w-full mt-2 justify-center" leftIcon={<Download className="w-4 h-4" />}>
                 Import & Open
               </Button>
             )}
-            {sharedContent.source_url && contentType !== 'youtube_session' && (
+            {sharedContent.source_url && contentType !== 'youtube_session' && contentType !== 'document_session' && contentType !== 'document_quiz' && (
               <a href={sharedContent.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 mt-2">
                 <ExternalLink className="w-3 h-3" /> View Original
               </a>

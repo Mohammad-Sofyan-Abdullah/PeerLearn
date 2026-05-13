@@ -786,7 +786,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                           <Copy className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="prose prose-sm max-w-none text-sm text-gray-700 dark:text-gray-300">
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {selectedSession.short_summary}
                         </ReactMarkdown>
@@ -804,7 +804,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                           <Copy className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="prose prose-sm max-w-none text-sm text-gray-700 dark:text-gray-300">
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {selectedSession.detailed_summary}
                         </ReactMarkdown>
@@ -832,7 +832,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                             }`}
                         >
-                          <div className="text-sm prose prose-sm max-w-none">
+                          <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                               {message.content}
                             </ReactMarkdown>
@@ -918,7 +918,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                       </button>
                     </div>
                   </div>
-                  <div className="prose prose-base max-w-none text-gray-700 dark:text-gray-300">
+                  <div className="prose prose-base dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {selectedSession.short_summary}
                     </ReactMarkdown>
@@ -936,7 +936,7 @@ const YouTubeSummarizerPage = ({ selectedSessionId, onSessionSelect, isSidebarOp
                       <Copy className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="prose prose-base max-w-none text-gray-700 dark:text-gray-300">
+                  <div className="prose prose-base dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {selectedSession.detailed_summary}
                     </ReactMarkdown>

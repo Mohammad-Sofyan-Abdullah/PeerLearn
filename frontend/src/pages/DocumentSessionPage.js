@@ -632,42 +632,44 @@ const DocumentSessionPage = () => {
                                                 className="relative w-full aspect-[16/9] cursor-pointer perspective-1000 group"
                                                 onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)}
                                             >
-                                                {/* Card Front */}
                                                 <motion.div
-                                                    className="absolute inset-0 w-full h-full bg-white dark:bg-gray-800 rounded-2xl shadow-md dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-gray-200 dark:border-gray-700 p-8 md:p-16 flex flex-col items-center justify-center text-center backface-hidden hover:shadow-lg transition-shadow duration-300"
+                                                    className="relative w-full h-full"
                                                     animate={{ rotateY: isFlashcardFlipped ? 180 : 0 }}
                                                     transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
-                                                    style={{ backfaceVisibility: 'hidden' }}
+                                                    style={{ transformStyle: 'preserve-3d' }}
                                                 >
-                                                    <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-6 px-3 py-1 bg-indigo-50 rounded-full">Question</span>
-                                                    <p className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed font-serif">
-                                                        {session.flashcards[currentFlashcardIndex]?.question}
-                                                    </p>
-                                                    <p className="text-gray-400 dark:text-gray-500 text-sm mt-auto pt-8 group-hover:text-indigo-500 transition-colors flex items-center gap-2">
-                                                        <span>Click to flip</span>
-                                                        <ArrowRight className="h-3 w-3" />
-                                                    </p>
-                                                </motion.div>
-
-                                                {/* Card Back */}
-                                                <motion.div
-                                                    className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-[0_8px_30px_rgb(79,70,229,0.3)] p-8 md:p-16 flex flex-col items-center justify-center text-center text-white backface-hidden"
-                                                    initial={{ rotateY: 180 }}
-                                                    animate={{ rotateY: isFlashcardFlipped ? 0 : 180 }}
-                                                    transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
-                                                    style={{ backfaceVisibility: 'hidden' }}
-                                                >
-                                                    <span className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-6 px-3 py-1 bg-white/10 rounded-full backdrop-blur-sm">Answer</span>
-                                                    <div className="text-xl md:text-2xl font-medium leading-relaxed text-left">
-                                                        <MarkdownRendererLight content={session.flashcards[currentFlashcardIndex]?.answer} />
+                                                    {/* Card Front */}
+                                                    <div
+                                                        className="absolute inset-0 w-full h-full bg-white dark:bg-gray-800 rounded-2xl shadow-md dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-gray-200 dark:border-gray-700 p-8 md:p-16 flex flex-col items-center justify-center text-center hover:shadow-lg transition-shadow duration-300"
+                                                        style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+                                                    >
+                                                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-6 px-3 py-1 bg-indigo-50 rounded-full">Question</span>
+                                                        <p className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed font-serif">
+                                                            {session.flashcards[currentFlashcardIndex]?.question}
+                                                        </p>
+                                                        <p className="text-gray-400 dark:text-gray-500 text-sm mt-auto pt-8 group-hover:text-indigo-500 transition-colors flex items-center gap-2">
+                                                            <span>Click to flip</span>
+                                                            <ArrowRight className="h-3 w-3" />
+                                                        </p>
                                                     </div>
-                                                    {session.flashcards[currentFlashcardIndex]?.explanation && (
-                                                        <div className="mt-8 pt-6 border-t border-white/10 w-full">
-                                                            <MarkdownRendererLight
-                                                                content={`**Explanation:** ${session.flashcards[currentFlashcardIndex]?.explanation}`}
-                                                            />
+
+                                                    {/* Card Back */}
+                                                    <div
+                                                        className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-[0_8px_30px_rgb(79,70,229,0.3)] p-8 md:p-16 flex flex-col items-center justify-center text-center text-white"
+                                                        style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                                                    >
+                                                        <span className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-6 px-3 py-1 bg-white/10 rounded-full backdrop-blur-sm">Answer</span>
+                                                        <div className="text-xl md:text-2xl font-medium leading-relaxed text-left">
+                                                            <MarkdownRendererLight content={session.flashcards[currentFlashcardIndex]?.answer} />
                                                         </div>
-                                                    )}
+                                                        {session.flashcards[currentFlashcardIndex]?.explanation && (
+                                                            <div className="mt-8 pt-6 border-t border-white/10 w-full">
+                                                                <MarkdownRendererLight
+                                                                    content={`**Explanation:** ${session.flashcards[currentFlashcardIndex]?.explanation}`}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </motion.div>
                                             </div>
 

@@ -216,12 +216,12 @@ const FriendsPage = () => {
                 <LoadingSpinner size="lg" />
               </div>
             ) : friends.length === 0 ? (
-              <div className="text-center py-16 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                <div className="bg-white p-4 rounded-full shadow-sm inline-block mb-4">
+              <div className="text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-full shadow-sm inline-block mb-4">
                   <UserPlus className="h-8 w-8 text-indigo-500" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No friends yet</h3>
-                <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No friends yet</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                   Start building your network by searching for classmates and sending friend requests.
                 </p>
                 <Button
@@ -302,17 +302,17 @@ const FriendsPage = () => {
                 <LoadingSpinner size="lg" />
               </div>
             ) : friendRequests.length === 0 ? (
-              <div className="text-center py-16 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                <Inbox className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900">No pending requests</h3>
-                <p className="text-gray-500">You're all caught up! Check back later.</p>
+              <div className="text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <Inbox className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">No pending requests</h3>
+                <p className="text-gray-500 dark:text-gray-400">You're all caught up! Check back later.</p>
               </div>
             ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                  <h3 className="font-semibold text-gray-900">Pending Requests ({friendRequests.length})</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Pending Requests ({friendRequests.length})</h3>
                 </div>
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {friendRequests.map((request) => {
                     const requestId = request.request_id || request._id || request.id;
                     const sender = request.sender || request.user || {};
@@ -323,9 +323,9 @@ const FriendsPage = () => {
                             <UserPlus className="h-6 w-6" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900">{sender.name || 'Unknown User'}</h4>
-                            <p className="text-sm text-gray-500">{sender.email}</p>
-                            <p className="text-xs text-gray-400 mt-1">Sent on {new Date(request.created_at || Date.now()).toLocaleDateString()}</p>
+                            <h4 className="font-medium text-gray-900 dark:text-white">{sender.name || 'Unknown User'}</h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{sender.email}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sent on {new Date(request.created_at || Date.now()).toLocaleDateString()}</p>
                           </div>
                         </div>
                         <div className="flex gap-3 w-full sm:w-auto">
@@ -364,8 +364,8 @@ const FriendsPage = () => {
             exit={{ opacity: 0, y: -10 }}
             className="max-w-2xl mx-auto"
           >
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Search for People</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Search for People</h3>
               <div className="relative mb-6">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
@@ -373,7 +373,7 @@ const FriendsPage = () => {
                   placeholder="Search by name, email, or student ID..."
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                 />
               </div>
 
@@ -388,15 +388,15 @@ const FriendsPage = () => {
                       {searchResults.map((result) => (
                         <div
                           key={result.user.id || result.user._id}
-                          className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600">
+                            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300">
                               <User className="h-5 w-5" />
                             </div>
                             <div className="flex flex-col">
-                              <span className="font-medium text-gray-900">{result.user.name}</span>
-                              <span className="text-sm text-gray-500">{result.user.email}</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{result.user.name}</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">{result.user.email}</span>
                             </div>
                           </div>
 
@@ -426,7 +426,7 @@ const FriendsPage = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       No users found matching "{searchQuery}"
                     </div>
                   )}
